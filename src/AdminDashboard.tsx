@@ -10,6 +10,7 @@ import { ReservationEdit } from './Components/ReservationEdit';
 import { ReservationList } from './Components/ReservationList';
 import { UsersEdit } from './Components/UsersEdit';
 import { UsersList } from './Components/UsersList';
+import CustomLoginPage from './pages/CustomLoginPage';
 
 const options = {
   logging: true,
@@ -20,7 +21,11 @@ const dataProvider = FirebaseDataProvider(firebaseConfig, options);
 const authProvider = CustomAuthProvider;
 
 const AdminDashboard = () => (
-  <Admin dataProvider={dataProvider} authProvider={authProvider}>
+  <Admin
+    dataProvider={dataProvider}
+    authProvider={authProvider}
+    loginPage={CustomLoginPage}
+  >
     <Resource name="reservations" list={ReservationList} edit={ReservationEdit} />
     <Resource name="users" list={UsersList} edit={UsersEdit} />
     {/* Ajoutez d'autres resources si nécessaire */}

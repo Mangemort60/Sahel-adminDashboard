@@ -18,8 +18,8 @@ const CustomAuthProvider = {
         const userDocSnap = await getDoc(userDocRef);
 
         if (userDocSnap.exists()) {
-          const userRoles = userDocSnap.data().roles; // Supposons que c'est un tableau
-          if (userRoles.includes('admin')) {
+          const userRoles = userDocSnap.data().role; // Supposons que c'est un tableau
+          if (userRoles === 'admin') {
             // L'utilisateur a le rôle "admin"
             const token = await user.getIdToken();
             Cookies.set('token', token, { expires: 7 });

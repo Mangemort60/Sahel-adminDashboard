@@ -1,4 +1,11 @@
-import { Edit, ListProps, SelectInput, SimpleForm, TextInput } from 'react-admin';
+import {
+  DateInput,
+  Edit,
+  ListProps,
+  SelectInput,
+  SimpleForm,
+  TextInput,
+} from 'react-admin';
 
 const roleChoices = [
   { id: 'client', name: 'Client' },
