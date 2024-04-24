@@ -26,11 +26,10 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
   const dataProvider = useDataProvider();
 
   const StatusChoices = [
-    { id: 'confirmée', name: 'Confirmée' },
-    { id: 'en cours de traitement', name: 'En cours de traitement' },
-    { id: 'terminée', name: 'Terminée' },
-
-    // Ajoutez d'autres rôles selon vos besoins
+    { id: 'à venir', name: 'à venir' },
+    { id: 'en cours', name: 'en cours' },
+    { id: 'suspendue', name: 'suspendue' },
+    { id: 'terminée', name: 'terminée' },
   ];
 
   useEffect(() => {
@@ -68,7 +67,11 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
         <TextInput source="bookingFormData.city" label="Ville" />
         <TextInput source="email" label="Email" />
         <TextInput source="bookingFormData.phone" label="Téléphone" />
-        <SelectInput source="status" label="Statut" choices={StatusChoices} />
+        <SelectInput
+          source="serviceStatus"
+          label="Statut de la réservation"
+          choices={StatusChoices}
+        />
         <NumberInput source="quote" label="Devis" />
         <DateInput source="serviceDate" label="Date du Service" />
         <BooleanInput source="formData.fruitBasketSelected" label="Panier de Fruits" />
