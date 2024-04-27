@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import {
   BooleanInput,
@@ -56,6 +57,18 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
       .finally(() => setLoading(false));
   }, [dataProvider]);
 
+  const dateFormatter = (v: string) => {
+    if (!v) return null;
+    const [day, month, year] = v.split('-');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`; // Format ISO
+  };
+
+  const dateParser = (v: string) => {
+    if (!v) return null;
+    const [year, month, day] = v.split('-');
+    return `${day}-${month}-${year}`; // Retour au format DD-MM-YYYY
+  };
+
   return (
     <Edit {...props} title="Éditer Réservation">
       <SimpleForm>
@@ -73,7 +86,12 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
           choices={StatusChoices}
         />
         <NumberInput source="quote" label="Devis" />
-        <DateInput source="serviceDate" label="Date du Service" />
+        <DateInput
+          source="serviceDate"
+          label="Date du Service"
+          format={dateFormatter}
+          parse={dateParser}
+        />
         <BooleanInput source="formData.fruitBasketSelected" label="Panier de Fruits" />
         <SelectInput
           source="agent"

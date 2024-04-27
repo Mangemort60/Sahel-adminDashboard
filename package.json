@@ -15,6 +15,7 @@
     "@emotion/styled": "^11.11.5",
     "@mui/material": "^5.15.14",
     "@reduxjs/toolkit": "^2.2.3",
+    "dayjs": "^1.11.10",
     "firebase": "^9.23.0",
     "js-cookie": "^3.0.5",
     "ra-data-simple-rest": "^4.16.12",

@@ -72,7 +72,7 @@ export const ReservationList = (props: ListProps) => (
       <TextField source="bookingFormData.city" label="Ville" />
       <EmailField source="email" label="Email" />
       <TextField source="bookingFormData.phone" label="Téléphone" />
-      <DateField source="serviceDate" label="Date du Service" />
+      <TextField source="serviceDate" label="Date du Service" />
       <TextField source="bookingStatus" label="Statut réservation" />
       <TextField source="serviceStatus" label="Statut prestation" />
       <SizeRangeField source="formData.sizeRange" label="Surface" />
