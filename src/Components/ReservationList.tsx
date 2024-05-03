@@ -44,15 +44,32 @@ const SizeRangeField = ({ source }: { source: string }) => {
 
   return <span>{sizeRangeDescription(sizeRange)}</span>;
 };
-const StatusChoices = [
+const BookingStatusChoices = [
   { id: 'confirmée', name: 'Confirmée' },
   { id: 'en cours de traitement', name: 'En cours de traitement' },
+  { id: 'terminée', name: 'Terminée' },
+];
+const ServiceStatusChoices = [
+  { id: 'à venir', name: 'A venir' },
+  { id: 'en cours', name: 'En cours' },
+  { id: 'suspendue', name: 'Suspendue' },
   { id: 'terminée', name: 'Terminée' },
 ];
 
 const ReservationFilter = (props) => (
   <Filter {...props}>
-    <SelectInput source="status" choices={StatusChoices} alwaysOn />
+    <SelectInput
+      source="bookingStatus"
+      label="Statut Réservation"
+      choices={BookingStatusChoices}
+      alwaysOn
+    />
+    <SelectInput
+      source="serviceStatus"
+      label="Statut prestation"
+      choices={ServiceStatusChoices}
+      alwaysOn
+    />
     <SearchInput
       source="shortId"
       resettable

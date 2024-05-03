@@ -35,6 +35,17 @@ const UsersFilter = (props) => (
       ]}
       alwaysOn
     />
+    <SelectInput
+      source="specificRole"
+      label="Type"
+      choices={[
+        { id: 'ménage', name: 'Ménage' },
+        { id: 'cuisine', name: 'Cuisine' },
+        { id: 'gardiennage', name: 'Gardiennage' },
+        // Ajoutez d'autres rôles selon votre application
+      ]}
+      alwaysOn
+    />
   </Filter>
 );
 
@@ -51,6 +62,7 @@ export const UsersList = (props: ListProps) => (
       <TextField source="email" label="Email" />
       <TextField source="shortId" label="ShortID" />
       <TextField source="role" label="Rôle" />
+      <TextField source="specificRole" label="type" />
     </Datagrid>
   </List>
 );
