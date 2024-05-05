@@ -13,6 +13,7 @@ import FileUploader from './Utils/FileUploader'; // Vérifiez que le chemin est 
 export const UserCreate = (props) => {
   const [cvUrl, setCvUrl] = useState('');
   const [cinUrl, setCinUrl] = useState('');
+  const [ribUrl, setRibUrl] = useState('');
   // Fonction pour générer un shortID
   const generateShortID = () => {
     const randomPart = Math.floor(1000 + Math.random() * 9000); // De 1000 à 9999
@@ -26,6 +27,7 @@ export const UserCreate = (props) => {
     shortId: generateShortID(),
     cvUrl,
     cinUrl,
+    ribUrl,
   });
 
   return (
@@ -55,6 +57,7 @@ export const UserCreate = (props) => {
         <TextInput source="cin_number" label="Numéro de la CIN" validate={[required()]} />
         <FileUploader source="cv" label="Upload CV" onUploadSuccess={setCvUrl} />
         <FileUploader source="cin" label="Upload CIN" onUploadSuccess={setCinUrl} />{' '}
+        <FileUploader source="rib" label="Upload RIB" onUploadSuccess={setRibUrl} />{' '}
         {/* Champ pour uploader une CIN */}
         {/* <FileInput
           source="cin_file"
@@ -73,21 +76,6 @@ export const UserCreate = (props) => {
         >
           <FileField source="src" title="title" />
         </FileInput> */}
-        <TextInput
-          source="informations_bancaires.banque"
-          label="Banque"
-          validate={[required()]}
-        />
-        <TextInput
-          source="informations_bancaires.titulaire_compte"
-          label="Titulaire du compte"
-          validate={[required()]}
-        />
-        <TextInput
-          source="informations_bancaires.numero_compte"
-          label="Numéro de compte"
-          validate={[required()]}
-        />
         <SelectInput
           source="status_verification"
           label="Statut de vérification"

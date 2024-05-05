@@ -35,8 +35,9 @@ export const UsersEdit = (props: ListProps) => (
       <DateInput source="date_naissance" label="Date de naissance" />
       <TextInput source="nationalite" label="Nationalité" />
       <SelectInput source="role" label="Rôle" choices={roleChoices} />
-      <DownloadField source="cvUrl" label="Download CV" />
-      <DownloadField source="cinUrl" label="Download CIN" />
+      <DownloadField source="cvUrl" label="Télécharger CV" />
+      <DownloadField source="cinUrl" label="Télécharger CIN" />
+      <DownloadField source="ribUrl" label="Télécharger RIB" />
     </SimpleForm>
   </Edit>
 );
