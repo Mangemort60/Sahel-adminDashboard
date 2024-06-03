@@ -93,6 +93,7 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
           parse={dateParser}
         />
         <BooleanInput source="formData.fruitBasketSelected" label="Panier de Fruits" />
+        <BooleanInput source="keyReceived" label="Clés reçues" />
         <SelectInput
           source="agent"
           label="Agent"

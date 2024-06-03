@@ -95,6 +95,7 @@ export const ReservationList = (props: ListProps) => (
       <SizeRangeField source="formData.sizeRange" label="Surface" />
       <TextField source="formData.numberOfFloors" label="Etage(s)" />
       <BooleanField source="formData.fruitBasketSelected" label="Panier de Fruits" />
+      <BooleanField source="keyReceived" label="Clés reçues" />
       <TextField source="quote" label="Devis" />
       <DateField source="createdAt" label="Créé le" showTime />
     </Datagrid>

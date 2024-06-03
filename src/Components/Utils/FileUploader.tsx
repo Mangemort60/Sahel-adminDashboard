@@ -1,5 +1,4 @@
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
-import React, { useState } from 'react';
 import { useNotify } from 'react-admin';
 
 const FileUploader = ({ source, label, onUploadSuccess }) => {

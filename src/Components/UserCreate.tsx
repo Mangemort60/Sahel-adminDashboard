@@ -20,7 +20,24 @@ export const UserCreate = (props) => {
     return `AG-${randomPart}`; // Préfixe AG- pour identifier facilement les agents
   };
 
-  const transformData = (data) => ({
+  interface UserCreateRecord {
+    name: string;
+    firstName: string;
+    adresse: string;
+    telephone: string;
+    email: string;
+    date_naissance: string; // Assuming it's a string representation of a date
+    lieu_naissance: string;
+    nationalite: string;
+    cin_number: string;
+    status_verification: string; // Assuming it's the string value from the dropdown
+    specificRole: string; // Assuming it's the string value from the dropdown
+    // Optional properties for uploaded files (if applicable)
+    cvUrl?: string;
+    cinUrl?: string;
+    ribUrl?: string;
+  }
+  const transformData = (data: UserCreateRecord) => ({
     ...data,
     role: 'agent',
     specificRole: data.specificRole,
