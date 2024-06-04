@@ -8,6 +8,7 @@ import {
   NumberInput,
   SelectInput,
   SimpleForm,
+  TextField,
   TextInput,
   useDataProvider,
 } from 'react-admin';
@@ -77,9 +78,24 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
         <TextInput readOnly source="shortId" label="ShortID" />
         <TextInput source="name" label="Nom" />
         <TextInput source="bookingFormData.address" label="Adresse" />
+        <TextInput source="bookingFormData.address2" label="Complément d'adresse" />
         <TextInput source="bookingFormData.city" label="Ville" />
         <TextInput source="email" label="Email" />
         <TextInput source="bookingFormData.phone" label="Téléphone" />
+        <p>Instructions du client :</p>
+        <TextField
+          source="bookingFormData.specialInstructions"
+          label="Instructions du client"
+          sx={{
+            marginBottom: '2rem',
+            whiteSpace: 'pre-wrap', // Assure que le texte est affiché sur plusieurs lignes si nécessaire
+            overflowWrap: 'break-word', // Permet de couper les mots trop longs
+            padding: '10px',
+            backgroundColor: '#f9f9f9',
+            borderBottom: '1px solid',
+            maxWidth: '100%', // Assure que le texte utilise toute la largeur disponible
+          }}
+        />{' '}
         <SelectInput
           source="serviceStatus"
           label="Statut de la réservation"
