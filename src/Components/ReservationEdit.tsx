@@ -147,11 +147,11 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
           choices={StatusChoices}
         />
         <Box sx={{ display: 'flex', alignItems: 'center', width: '50%', gap: '10px' }}>
-          <NumberInput disabled source="quote" label="Devis" />{' '}
+          <NumberInput readOnly source="quote" label="Devis" />{' '}
           <span style={{ fontSize: '2.5rem', paddingBottom: '3px' }}>€</span>
         </Box>
         <DateInput
-          disabled
+          readOnly
           source="serviceDate"
           label="Date du Service"
           format={dateFormatter}
