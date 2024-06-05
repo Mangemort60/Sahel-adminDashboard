@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import {
@@ -11,7 +12,11 @@ import {
   TextField,
   TextInput,
   useDataProvider,
+  useGetOne,
+  useNotify,
+  useRedirect,
 } from 'react-admin';
+import { useParams } from 'react-router-dom';
 
 interface User {
   id: string | number; // Selon que votre id est une chaîne ou un nombre
@@ -21,18 +26,61 @@ interface User {
 
   // Ajoutez d'autres champs nécessaires selon votre modèle de données
 }
+interface Reservation {
+  id: string;
+  createdAt: string;
+  shortId: string;
+  name: string;
+  firstName: string;
+  bookingFormData: {
+    address: string;
+    address2?: string;
+    city: string;
+    phone: string;
+    specialInstructions?: string;
+  };
+  email: string;
+  serviceStatus: string;
+  quote: number;
+  serviceDate: string;
+  formData: {
+    fruitBasketSelected: boolean;
+  };
+  keyReceived?: boolean;
+  agent?: string;
+}
+
+const StatusChoices = [
+  { id: 'à venir', name: 'à venir' },
+  { id: 'en cours', name: 'en cours' },
+  { id: 'suspendue', name: 'suspendue' },
+  { id: 'terminée', name: 'terminée' },
+];
 
 export const ReservationEdit: React.FC<EditProps> = (props) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const dataProvider = useDataProvider();
 
-  const StatusChoices = [
-    { id: 'à venir', name: 'à venir' },
-    { id: 'en cours', name: 'en cours' },
-    { id: 'suspendue', name: 'suspendue' },
-    { id: 'terminée', name: 'terminée' },
-  ];
+  const { id } = useParams<{ id: string }>();
+  const notify = useNotify();
+  const redirect = useRedirect();
+
+  const {
+    data: reservation,
+    isLoading,
+    error,
+  } = useGetOne<Reservation>('reservations', { id });
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    notify('Error fetching reservation', { type: 'warning' });
+    redirect('list', 'reservations');
+    return <div>Error loading reservation</div>;
+  }
 
   useEffect(() => {
     dataProvider
@@ -73,15 +121,46 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
   return (
     <Edit {...props} title="Éditer Réservation">
       <SimpleForm>
-        <TextInput disabled source="id" />
-        <DateInput readOnly source="createdAt" label="Créé le" />
-        <TextInput readOnly source="shortId" label="ShortID" />
-        <TextInput source="name" label="Nom" />
-        <TextInput source="bookingFormData.address" label="Adresse" />
-        <TextInput source="bookingFormData.address2" label="Complément d'adresse" />
-        <TextInput source="bookingFormData.city" label="Ville" />
-        <TextInput source="email" label="Email" />
-        <TextInput source="bookingFormData.phone" label="Téléphone" />
+        <Box sx={{ display: 'flex', width: '50%', gap: '10px' }}>
+          <TextInput disabled source="id" />
+          <DateInput readOnly source="createdAt" label="Créé le" />
+          <TextInput readOnly source="shortId" label="ShortID" />
+        </Box>
+        <p style={{ fontWeight: 'bolder' }}>Coordonnées du client</p>
+        <Box sx={{ display: 'flex', width: '50%', gap: '10px' }}>
+          <TextInput source="name" label="Nom" />
+          <TextInput source="firstName" label="Prénom" />
+        </Box>
+        <Box sx={{ display: 'flex', width: '50%', gap: '10px' }}>
+          <TextInput source="bookingFormData.address" label="Adresse" />
+          <TextInput source="bookingFormData.address2" label="Complément d'adresse" />
+          <TextInput source="bookingFormData.city" label="Ville" />
+        </Box>
+        <Box sx={{ display: 'flex', width: '50%', gap: '10px' }}>
+          <TextInput source="email" label="Email" />
+          <TextInput source="bookingFormData.phone" label="Téléphone" />
+        </Box>
+        <p style={{ fontWeight: 'bolder' }}>Information sur la réservation</p>
+        <SelectInput
+          source="serviceStatus"
+          label="Statut de la réservation"
+          choices={StatusChoices}
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', width: '50%', gap: '10px' }}>
+          <NumberInput disabled source="quote" label="Devis" />{' '}
+          <span style={{ fontSize: '2.5rem', paddingBottom: '3px' }}>€</span>
+        </Box>
+        <DateInput
+          disabled
+          source="serviceDate"
+          label="Date du Service"
+          format={dateFormatter}
+          parse={dateParser}
+        />
+        <BooleanInput source="formData.fruitBasketSelected" label="Panier de Fruits" />
+        {reservation?.keyReceived !== undefined && (
+          <BooleanInput source="keyReceived" label="Clés reçues" />
+        )}{' '}
         <p>Instructions du client :</p>
         <TextField
           source="bookingFormData.specialInstructions"
@@ -96,20 +175,7 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
             maxWidth: '100%', // Assure que le texte utilise toute la largeur disponible
           }}
         />{' '}
-        <SelectInput
-          source="serviceStatus"
-          label="Statut de la réservation"
-          choices={StatusChoices}
-        />
-        <NumberInput source="quote" label="Devis" />
-        <DateInput
-          source="serviceDate"
-          label="Date du Service"
-          format={dateFormatter}
-          parse={dateParser}
-        />
-        <BooleanInput source="formData.fruitBasketSelected" label="Panier de Fruits" />
-        <BooleanInput source="keyReceived" label="Clés reçues" />
+        <p style={{ fontWeight: 'bolder' }}>Agent assigné :</p>
         <SelectInput
           source="agent"
           label="Agent"
