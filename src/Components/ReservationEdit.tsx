@@ -69,6 +69,8 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
   const redirect = useRedirect();
   const apiUrl = getApiUrl();
 
+  console.log(apiUrl);
+
   const {
     data: reservation,
     isLoading,
@@ -80,7 +82,8 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
   useEffect(() => {
     const markMessagesAsReadByAgent = async () => {
       try {
-        await axios.put(`${apiUrl}/${id}/messages/read-by-agent`);
+        await axios.put(`${apiUrl}/reservations/${id}/messages/read-by-agent`);
+        console.log('API URL', apiUrl);
       } catch (error) {
         console.error('Error marking messages as read by agent:', error);
       }

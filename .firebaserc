@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "sahel-26e16"
+  },
+  "targets": {
+    "sahel-26e16": {
+      "hosting": {
+        "sahel-26e16": [
+          "sahel-26e16"
+        ],
+        "sahel-admin": [
+          "sahel-admin"
+        ]
+      }
+    }
   }
 }
