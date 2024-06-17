@@ -3,15 +3,15 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UserState {
   token: string | null;
-  role: string | null;
-  firstName: string | null;
+  role: string;
+  firstName: string;
 }
 
 // Définir l'état initial de l'utilisateur
 const initialState: UserState = {
-  token: null,
-  role: null,
-  firstName: null,
+  token: '',
+  role: '',
+  firstName: '',
 };
 
 const userSlice = createSlice({
@@ -29,9 +29,9 @@ const userSlice = createSlice({
     },
     // Action pour effacer les données de l'utilisateur lors de la déconnexion
     logout: (state) => {
-      state.token = null;
-      state.role = null;
-      state.firstName = null;
+      state.token = '';
+      state.role = '';
+      state.firstName = '';
     },
   },
 });

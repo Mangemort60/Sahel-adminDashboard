@@ -1,5 +1,5 @@
-import { Box } from '@mui/material';
-import dayjs from 'dayjs';
+import { Box, Divider } from '@mui/material';
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
   BooleanInput,
@@ -18,14 +18,17 @@ import {
 } from 'react-admin';
 import { useParams } from 'react-router-dom';
 
+import { useAppSelector } from '../app/hooks';
+import getApiUrl from '../utils/getApiUrl';
+import ChatBox from './ChatBox'; // Assurez-vous que le chemin est correct
+
 interface User {
-  id: string | number; // Selon que votre id est une chaîne ou un nombre
+  id: string | number;
   name: string;
   firstName: string;
   shortId: string;
-
-  // Ajoutez d'autres champs nécessaires selon votre modèle de données
 }
+
 interface Reservation {
   id: string;
   createdAt: string;
@@ -61,16 +64,56 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const dataProvider = useDataProvider();
-
   const { id } = useParams<{ id: string }>();
   const notify = useNotify();
   const redirect = useRedirect();
+  const apiUrl = getApiUrl();
 
   const {
     data: reservation,
     isLoading,
     error,
   } = useGetOne<Reservation>('reservations', { id });
+
+  const adminName = useAppSelector((state) => state.user.firstName);
+
+  useEffect(() => {
+    const markMessagesAsReadByAgent = async () => {
+      try {
+        await axios.put(`${apiUrl}/${id}/messages/read-by-agent`);
+      } catch (error) {
+        console.error('Error marking messages as read by agent:', error);
+      }
+    };
+
+    markMessagesAsReadByAgent();
+  }, [id]);
+
+  useEffect(() => {
+    if (!isLoading && !error) {
+      dataProvider
+        .getList('users', {
+          pagination: { page: 1, perPage: 10 },
+          sort: { field: 'name', order: 'ASC' },
+          filter: { role: 'agent' },
+        })
+        .then(({ data }) => {
+          const typedData = data as User[];
+          setUsers(
+            typedData.map((user) => ({
+              id: user.id,
+              name: user.name,
+              firstName: user.firstName,
+              shortId: user.shortId,
+            })),
+          );
+        })
+        .catch((error) => {
+          console.error(error);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [dataProvider, isLoading, error]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -82,40 +125,16 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
     return <div>Error loading reservation</div>;
   }
 
-  useEffect(() => {
-    dataProvider
-      .getList('users', {
-        pagination: { page: 1, perPage: 10 },
-        sort: { field: 'name', order: 'ASC' },
-        filter: { role: 'agent' },
-      })
-      .then(({ data }) => {
-        const typedData = data as User[]; // Assurer que data est typée comme un tableau de User
-        setUsers(
-          typedData.map((user) => ({
-            id: user.id,
-            name: user.name,
-            firstName: user.firstName,
-            shortId: user.shortId,
-          })),
-        );
-      })
-      .catch((error) => {
-        console.error(error);
-      })
-      .finally(() => setLoading(false));
-  }, [dataProvider]);
-
   const dateFormatter = (v: string) => {
     if (!v) return null;
     const [day, month, year] = v.split('-');
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`; // Format ISO
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   };
 
   const dateParser = (v: string) => {
     if (!v) return null;
     const [year, month, day] = v.split('-');
-    return `${day}-${month}-${year}`; // Retour au format DD-MM-YYYY
+    return `${day}-${month}-${year}`;
   };
 
   return (
@@ -160,21 +179,25 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
         <BooleanInput source="formData.fruitBasketSelected" label="Panier de Fruits" />
         {reservation?.keyReceived !== undefined && (
           <BooleanInput source="keyReceived" label="Clés reçues" />
-        )}{' '}
-        <p>Instructions du client :</p>
-        <TextField
-          source="bookingFormData.specialInstructions"
-          label="Instructions du client"
-          sx={{
-            marginBottom: '2rem',
-            whiteSpace: 'pre-wrap', // Assure que le texte est affiché sur plusieurs lignes si nécessaire
-            overflowWrap: 'break-word', // Permet de couper les mots trop longs
-            padding: '10px',
-            backgroundColor: '#f9f9f9',
-            borderBottom: '1px solid',
-            maxWidth: '100%', // Assure que le texte utilise toute la largeur disponible
-          }}
-        />{' '}
+        )}
+        {reservation?.bookingFormData.specialInstructions && (
+          <>
+            <p>Instructions du client :</p>
+            <TextField
+              source="bookingFormData.specialInstructions"
+              label="Instructions du client"
+              sx={{
+                marginBottom: '2rem',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'break-word',
+                padding: '10px',
+                backgroundColor: '#f9f9f9',
+                borderBottom: '1px solid',
+                maxWidth: '100%',
+              }}
+            />
+          </>
+        )}
         <p style={{ fontWeight: 'bolder' }}>Agent assigné :</p>
         <SelectInput
           source="agent"
@@ -182,10 +205,13 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
           choices={users}
           optionText={(user: User) => `${user.firstName} ${user.name} (${user.shortId})`}
           optionValue="name"
-          // disabled={loading}
         />
-        {/* Assurez-vous d'ajuster les champs selon votre modèle de données */}
+        <hr className="border 2px" />
+        {/* Ajouter ChatBox ici */}
       </SimpleForm>
+
+      <Divider style={{ marginTop: 34, fontSize: 28 }}>Messagerie</Divider>
+      {reservation && <ChatBox reservationId={reservation.id} sender={adminName} />}
     </Edit>
   );
 };

@@ -1,9 +1,14 @@
+import { Badge, Box } from '@mui/material';
+import { blue } from '@mui/material/colors';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 import {
   BooleanField,
   Datagrid,
   DateField,
   EmailField,
   Filter,
+  FunctionField,
   List,
   ListProps,
   SearchInput,
@@ -11,6 +16,8 @@ import {
   TextField,
 } from 'react-admin';
 import { useRecordContext } from 'react-admin';
+
+import getApiUrl from '../utils/getApiUrl';
 
 interface RecordWithFormData {
   formData: {
@@ -79,25 +86,87 @@ const ReservationFilter = (props) => (
   </Filter>
 );
 
-export const ReservationList = (props: ListProps) => (
-  <List {...props} title="Liste des réservations" filters={<ReservationFilter />}>
-    <Datagrid rowClick="edit">
-      <TextField readOnly source="shortId" label="shortID" />
-      <TextField source="agent" label="Agent" />
-      <TextField source="name" label="Nom" />
-      <TextField source="bookingFormData.address" label="Adresse" />
-      <TextField source="bookingFormData.city" label="Ville" />
-      <EmailField source="email" label="Email" />
-      <TextField source="bookingFormData.phone" label="Téléphone" />
-      <TextField source="serviceDate" label="Date du Service" />
-      <TextField source="bookingStatus" label="Statut réservation" />
-      <TextField source="serviceStatus" label="Statut prestation" />
-      <SizeRangeField source="formData.sizeRange" label="Surface" />
-      <TextField source="formData.numberOfFloors" label="Etage(s)" />
-      <BooleanField source="formData.fruitBasketSelected" label="Panier de Fruits" />
-      <BooleanField source="keyReceived" label="Clés reçues" />
-      <TextField source="quote" label="Devis" />
-      <DateField source="createdAt" label="Créé le" showTime />
-    </Datagrid>
-  </List>
-);
+// Interface pour un message
+interface Message {
+  reservationId: string;
+  text: string;
+  created: string;
+  role: string;
+  readByAgent: boolean;
+}
+
+type NewMessagesType = {
+  [reservationId: string]: number;
+};
+
+export const ReservationList = (props: ListProps) => {
+  const [newMessages, setNewMessages] = useState<NewMessagesType>({});
+  const apiUrl = getApiUrl();
+  useEffect(() => {
+    const fetchNewMessages = async () => {
+      try {
+        const response = await axios.get<Message[]>(`${apiUrl}/new-messages`);
+        const messages = response.data.reduce<NewMessagesType>((acc, message) => {
+          if (!message.readByAgent && message.role === 'client') {
+            // Vérifiez si le message n'a pas été lu
+            if (!acc[message.reservationId]) {
+              acc[message.reservationId] = 0;
+            }
+            acc[message.reservationId]++;
+          }
+          return acc;
+        }, {});
+        setNewMessages(messages);
+        console.log('messages: ', messages);
+      } catch (error) {
+        console.error('Error fetching new messages:', error);
+      }
+    };
+
+    fetchNewMessages();
+    const interval = setInterval(fetchNewMessages, 10000); // Polling toutes les 10 secondes
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <List {...props} title="Liste des réservations" filters={<ReservationFilter />}>
+      <Datagrid rowClick="edit">
+        <FunctionField
+          label="Nouveaux Messages"
+          render={(record: { id: string }) => (
+            <Badge
+              sx={{ color: blue }}
+              color={newMessages[record.id] > 0 ? 'secondary' : 'primary'}
+              badgeContent={newMessages[record.id] > 0 ? newMessages[record.id] : 0}
+            >
+              <Box
+                component="span"
+                sx={{
+                  color: newMessages[record.id] > 0 ? 'red' : 'green', // Changez la couleur ici
+                }}
+              >
+                {newMessages[record.id] > 0 ? 'Nouveau' : 'Aucun'}
+              </Box>
+            </Badge>
+          )}
+        />{' '}
+        <TextField readOnly source="shortId" label="shortID" />
+        <TextField source="agent" label="Agent" />
+        <TextField source="name" label="Nom" />
+        <TextField source="bookingFormData.address" label="Adresse" />
+        <TextField source="bookingFormData.city" label="Ville" />
+        <EmailField source="email" label="Email" />
+        <TextField source="bookingFormData.phone" label="Téléphone" />
+        <TextField source="serviceDate" label="Date du Service" />
+        <TextField source="bookingStatus" label="Statut réservation" />
+        <TextField source="serviceStatus" label="Statut prestation" />
+        <SizeRangeField source="formData.sizeRange" label="Surface" />
+        <TextField source="formData.numberOfFloors" label="Etage(s)" />
+        <BooleanField source="formData.fruitBasketSelected" label="Panier de Fruits" />
+        <BooleanField source="keyReceived" label="Clés reçues" />
+        <TextField source="quote" label="Devis" />
+        <DateField source="createdAt" label="Créé le" showTime />
+      </Datagrid>
+    </List>
+  );
+};
