@@ -87,6 +87,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
   };
 
   const onSubmit = async (data: MessageData) => {
+    console.log('CLIENT EMAIL', clientEmail);
+
     const formData = new FormData();
     formData.append('sender', sender);
     formData.append('clientEmail', clientEmail);
