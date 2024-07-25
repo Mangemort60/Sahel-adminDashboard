@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IconButton, Paper, TextField, Typography } from '@mui/material';
+import { Button, IconButton, Paper, TextField, Typography } from '@mui/material';
 import { Box } from '@mui/system';
 import axios from 'axios';
 import { getDownloadURL, ref } from 'firebase/storage';
@@ -16,9 +16,10 @@ import getApiUrl from '../utils/getApiUrl';
 interface ChatBoxProps {
   reservationId: string;
   sender: string;
+  clientEmail: string;
 }
 
-const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender }) => {
+const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail }) => {
   //   const reservationId = useAppSelector((state) => state.ui.reservationId);
   //   const sender = useAppSelector((state) => state.user.name);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -28,6 +29,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender }) => {
 
   interface Message {
     sender: string;
+    clientEmail: string;
     text: string;
     role: string;
     attachments?: { url: string; type: string }[];
@@ -87,6 +89,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender }) => {
   const onSubmit = async (data: MessageData) => {
     const formData = new FormData();
     formData.append('sender', sender);
+    formData.append('clientEmail', clientEmail);
     formData.append('text', data.text);
     formData.append('role', userRole);
     formData.append('created', new Date().toISOString());
@@ -108,6 +111,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender }) => {
       const newMessage: Message = {
         sender,
         text: data.text,
+        clientEmail: clientEmail,
         role: userRole,
         created: new Date().toISOString(),
         attachments: selectedFiles.map((file) => ({

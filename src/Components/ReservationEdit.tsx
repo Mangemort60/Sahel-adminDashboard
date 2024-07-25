@@ -1,4 +1,4 @@
-import { Box, Divider } from '@mui/material';
+import { Box, Button, Divider, Switch } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
@@ -35,6 +35,7 @@ interface Reservation {
   shortId: string;
   name: string;
   firstName: string;
+  chatStatus: boolean;
   bookingFormData: {
     address: string;
     address2?: string;
@@ -63,6 +64,7 @@ const StatusChoices = [
 export const ReservationEdit: React.FC<EditProps> = (props) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatStatus, setChatStatus] = useState(false);
   const dataProvider = useDataProvider();
   const { id } = useParams<{ id: string }>();
   const notify = useNotify();
@@ -80,6 +82,10 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
   const adminName = useAppSelector((state) => state.user.firstName);
 
   useEffect(() => {
+    if (reservation) {
+      setChatStatus(reservation.chatStatus);
+    }
+
     const markMessagesAsReadByAgent = async () => {
       try {
         await axios.put(`${apiUrl}/reservations/${id}/messages/read-by-agent`);
@@ -138,6 +144,18 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
     if (!v) return null;
     const [year, month, day] = v.split('-');
     return `${day}-${month}-${year}`;
+  };
+
+  const handleChatStatusChange = async () => {
+    try {
+      const response = await axios.post(
+        `${apiUrl}/reservations/${reservation?.id}/toggleChatStatus`,
+      );
+      setChatStatus(response.data.chatStatus); // Mettre à jour l'état local avec le nouveau statut
+      console.log('Chat status updated successfully', chatStatus);
+    } catch (error) {
+      console.error('Error updating chat status:', error);
+    }
   };
 
   return (
@@ -212,9 +230,18 @@ export const ReservationEdit: React.FC<EditProps> = (props) => {
         <hr className="border 2px" />
         {/* Ajouter ChatBox ici */}
       </SimpleForm>
-
       <Divider style={{ marginTop: 34, fontSize: 28 }}>Messagerie</Divider>
-      {reservation && <ChatBox reservationId={reservation.id} sender={adminName} />}
+      {/* <Box mt={2} display="flex" alignItems="center">
+        <Switch checked={chatStatus} onChange={handleChatStatusChange} color="primary" />
+        {chatStatus ? 'Fermer le chat' : 'Ouvrir le chat'}
+      </Box>{' '} */}
+      {reservation && (
+        <ChatBox
+          reservationId={reservation.id}
+          sender={adminName}
+          clientEmail={reservation.email}
+        />
+      )}
     </Edit>
   );
 };
