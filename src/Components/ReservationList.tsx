@@ -1,7 +1,7 @@
 import { Badge, Box } from '@mui/material';
 import { blue } from '@mui/material/colors';
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BooleanField,
   Datagrid,
@@ -16,7 +16,10 @@ import {
   TextField,
 } from 'react-admin';
 import { useRecordContext } from 'react-admin';
+import { useDispatch, useSelector } from 'react-redux'; // Import correct
 
+import { useAppSelector } from '../app/hooks';
+import { setReservationType } from '../features/user/userSlice';
 import getApiUrl from '../utils/getApiUrl';
 
 interface RecordWithFormData {
@@ -51,41 +54,64 @@ const SizeRangeField = ({ source }: { source: string }) => {
 
   return <span>{sizeRangeDescription(sizeRange)}</span>;
 };
-const BookingStatusChoices = [
-  { id: 'confirmée', name: 'Confirmée' },
-  { id: 'en cours de traitement', name: 'En cours de traitement' },
-  { id: 'terminée', name: 'Terminée' },
-];
-const ServiceStatusChoices = [
-  { id: 'à venir', name: 'A venir' },
-  { id: 'en cours', name: 'En cours' },
-  { id: 'suspendue', name: 'Suspendue' },
-  { id: 'terminée', name: 'Terminée' },
-];
 
-const ReservationFilter = (props) => (
-  <Filter {...props}>
-    <SelectInput
-      source="bookingStatus"
-      label="Statut Réservation"
-      choices={BookingStatusChoices}
-      alwaysOn
-    />
-    <SelectInput
-      source="serviceStatus"
-      label="Statut prestation"
-      choices={ServiceStatusChoices}
-      alwaysOn
-    />
-    <SearchInput
-      source="shortId"
-      resettable
-      alwaysOn
-      placeholder="Recherche par ShortID"
-    />
-  </Filter>
-);
+const ReservationFilter = (props) => {
+  const dispatch = useDispatch();
 
+  const handleReservationTypeChange = (event) => {
+    const selectedType = event.target.value;
+
+    // Si la valeur sélectionnée est vide, on dispatch "all"
+    if (!selectedType) {
+      dispatch(setReservationType('all'));
+    } else {
+      dispatch(setReservationType(selectedType)); // Dispatcher la valeur sélectionnée normalement
+    }
+  };
+
+  return (
+    <Filter {...props}>
+      <SelectInput
+        source="bookingStatus"
+        label="Statut Réservation"
+        choices={[
+          { id: 'confirmé', name: 'Confirmé' },
+          { id: 'en cours de traitement', name: 'En cours de traitement' },
+          { id: 'terminée', name: 'Terminée' },
+        ]}
+        alwaysOn
+      />
+      <SelectInput
+        source="reservationType"
+        label="Type de réservation"
+        choices={[
+          { id: 'ménage', name: 'Ménage' },
+          { id: 'cuisine', name: 'Cuisine' },
+          { id: 'petits-travaux', name: 'Petits-travaux' },
+        ]}
+        alwaysOn
+        onChange={handleReservationTypeChange} // Appel de la fonction handleReservationTypeChange
+      />
+      <SelectInput
+        source="serviceStatus"
+        label="Statut prestation"
+        choices={[
+          { id: 'à venir', name: 'À venir' },
+          { id: 'en cours', name: 'En cours' },
+          { id: 'suspendue', name: 'Suspendue' },
+          { id: 'terminée', name: 'Terminée' },
+        ]}
+        alwaysOn
+      />
+      <SearchInput
+        source="shortId"
+        resettable
+        alwaysOn
+        placeholder="Recherche par ShortID"
+      />
+    </Filter>
+  );
+};
 // Interface pour un message
 interface Message {
   reservationId: string;
@@ -101,6 +127,7 @@ type NewMessagesType = {
 
 export const ReservationList = (props: ListProps) => {
   const [newMessages, setNewMessages] = useState<NewMessagesType>({});
+  const reservationType = useAppSelector((state) => state.user.reservationType); // Récupère la sélection du type de réservation depuis Redux
   const apiUrl = getApiUrl();
   useEffect(() => {
     const fetchNewMessages = async () => {
@@ -131,8 +158,20 @@ export const ReservationList = (props: ListProps) => {
   return (
     <List {...props} title="Liste des réservations" filters={<ReservationFilter />}>
       <Datagrid rowClick="edit">
+        <TextField
+          source="reservationType"
+          label="Type"
+          sx={{
+            flexGrow: 0,
+            flexShrink: 1,
+            flexBasis: 'auto',
+            maxWidth: 80,
+            fontWeight: 'bold',
+            textTransform: 'capitalize',
+          }}
+        />
         <FunctionField
-          label="Nouveaux Messages"
+          label="Messages"
           render={(record: { id: string }) => (
             <Badge
               sx={{ color: blue }}
@@ -150,20 +189,29 @@ export const ReservationList = (props: ListProps) => {
             </Badge>
           )}
         />{' '}
+        <TextField source="bookingStatus" label="Statut réservation" />
+        <TextField source="serviceStatus" label="Statut prestation" />
         <TextField readOnly source="shortId" label="shortID" />
+        <TextField readOnly source="reservationShortId" label="ReservationShortID" />
         <TextField source="agent" label="Agent" />
         <TextField source="name" label="Nom" />
-        <TextField source="bookingFormData.address" label="Adresse" />
-        <TextField source="bookingFormData.city" label="Ville" />
+        {/* <TextField source="bookingFormData.address" label="Adresse" />
+        <TextField source="bookingFormData.city" label="Ville" /> */}
         <EmailField source="email" label="Email" />
         <TextField source="bookingFormData.phone" label="Téléphone" />
         <TextField source="serviceDate" label="Date du Service" />
-        <TextField source="bookingStatus" label="Statut réservation" />
-        <TextField source="serviceStatus" label="Statut prestation" />
-        <SizeRangeField source="formData.sizeRange" label="Surface" />
-        <TextField source="formData.numberOfFloors" label="Etage(s)" />
-        <BooleanField source="formData.fruitBasketSelected" label="Panier de Fruits" />
-        <BooleanField source="keyReceived" label="Clés reçues" />
+        {(reservationType === 'ménage' || reservationType === 'all') && (
+          <TextField source="formData.sizeRange" label="Surface" />
+        )}
+        {(reservationType === 'ménage' || reservationType === 'all') && (
+          <TextField source="formData.numberOfFloors" label="Étages" />
+        )}
+        {(reservationType === 'ménage' || reservationType === 'all') && (
+          <BooleanField source="formData.fruitBasketSelected" label="Panier de fruits" />
+        )}
+        {(reservationType === 'ménage' || reservationType === 'all') && (
+          <BooleanField source="keyReceived" label="Clés reçues" />
+        )}
         <TextField source="quote" label="Devis" />
         <DateField source="createdAt" label="Créé le" showTime />
       </Datagrid>

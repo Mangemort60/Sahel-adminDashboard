@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, IconButton, Paper, TextField, Typography } from '@mui/material';
+import { IconButton, Paper, TextField, Typography } from '@mui/material';
 import { Box } from '@mui/system';
 import axios from 'axios';
 import { getDownloadURL, ref } from 'firebase/storage';
@@ -9,7 +9,7 @@ import { IoIosAttach } from 'react-icons/io';
 import { IoSend } from 'react-icons/io5';
 import { z } from 'zod';
 
-import { auth, storage } from '../../firebaseConfig'; // Importez votre configuration Firebase
+import { storage } from '../../firebaseConfig'; // Importez votre configuration Firebase
 import { useAppSelector } from '../../src/app/hooks';
 import { messageSchema } from '../schemas/messageSchema';
 import getApiUrl from '../utils/getApiUrl';
@@ -26,6 +26,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const userRole = useAppSelector((state) => state.user.role);
   const apiUrl = getApiUrl();
+  console.log('RESERVATION ID', reservationId);
 
   interface Message {
     sender: string;
@@ -40,26 +41,36 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
     const fetchMessages = async () => {
       try {
         const response = await axios.get<Message[]>(
-          `${apiUrl}/reservations/${reservationId}/messages`,
+          `${apiUrl}/admin/reservations/${reservationId}/messages`,
         );
 
-        const messagesWithUrls = await Promise.all(
-          response.data.map(async (message) => {
-            if (message.attachments && message.attachments.length > 0) {
-              const attachmentsWithUrls = await Promise.all(
-                message.attachments.map(async (attachment) => {
-                  const fileRef = ref(storage, attachment.url);
-                  const url = await getDownloadURL(fileRef);
-                  return { url, type: attachment.type };
-                }),
-              );
-              message.attachments = attachmentsWithUrls;
-            }
-            return message;
-          }),
-        );
+        // Vérifiez la réponse reçue
+        console.log('API Response:', response); // Log complet de la réponse
+        console.log('Messages fetched from API:', response.data); // Log des données seulement
 
-        setMessages(messagesWithUrls);
+        // Vérifiez si la réponse contient bien un tableau de messages
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          // Si des messages sont trouvés, mappez-les et mettez à jour l'état
+          const messagesWithUrls = await Promise.all(
+            response.data.map(async (message) => {
+              if (message.attachments && message.attachments.length > 0) {
+                const attachmentsWithUrls = await Promise.all(
+                  message.attachments.map(async (attachment) => {
+                    const fileRef = ref(storage, attachment.url);
+                    const url = await getDownloadURL(fileRef);
+                    return { url, type: attachment.type };
+                  }),
+                );
+                message.attachments = attachmentsWithUrls;
+              }
+              return message;
+            }),
+          );
+          setMessages(messagesWithUrls);
+        } else {
+          console.log('No messages found.');
+          setMessages([]); // Mettez à jour l'état avec un tableau vide si aucun message n'est trouvé
+        }
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
@@ -87,8 +98,6 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
   };
 
   const onSubmit = async (data: MessageData) => {
-    console.log('CLIENT EMAIL', clientEmail);
-
     const formData = new FormData();
     formData.append('sender', sender);
     formData.append('clientEmail', clientEmail);
@@ -132,14 +141,16 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
   };
 
   return (
-    <Box mt={8}>
-      <Box
-        component="ul"
-        display="flex"
-        flexDirection="column"
-        alignItems="flex-end"
-        p={0}
-      >
+    <Box
+      mt={8}
+      sx={{
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyItems: 'center',
+      }}
+    >
+      <Box component="ul" display="flex" flexDirection="column" alignItems="center" p={0}>
         {messages.map((message, index) => (
           <Box
             component="li"
@@ -147,12 +158,12 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
             display="flex"
             justifyContent={message.role === 'client' ? 'flex-end' : 'flex-start'}
             mb={2}
-            width="100%"
+            width="80%"
           >
             <Paper
               elevation={3}
               sx={{
-                maxWidth: '75%',
+                maxWidth: '30%',
                 p: 2,
                 bgcolor: message.sender === sender ? 'primary.light' : 'grey.300',
                 color: message.sender === sender ? 'white' : 'text.primary',
@@ -178,7 +189,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
           </Box>
         ))}
       </Box>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} style={{ width: '100%' }}>
         <Box display="flex" mt={2} maxWidth="sm">
           <TextField
             {...register('text')}
@@ -189,6 +200,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
             helperText={errors.text?.message as string}
             multiline
             rows={3}
+            sx={{ flexGrow: 1 }}
           />
           <IconButton component="label">
             <IoIosAttach fontSize={28} color="grey" className="hover:cursor-pointer" />

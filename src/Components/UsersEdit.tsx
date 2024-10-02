@@ -10,7 +10,7 @@ import {
   Toolbar,
 } from 'react-admin';
 
-import DownloadField from './Utils/DownloadField'; // Assurez-vous que le chemin est correct
+import DownloadField from './utils/DownloadField'; // Assurez-vous que le chemin est correct
 
 const roleChoices = [
   { id: 'client', name: 'Client' },

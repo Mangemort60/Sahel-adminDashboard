@@ -5,6 +5,7 @@ interface UserState {
   token: string | null;
   role: string;
   firstName: string;
+  reservationType: string;
 }
 
 // Définir l'état initial de l'utilisateur
@@ -12,32 +13,42 @@ const initialState: UserState = {
   token: '',
   role: '',
   firstName: '',
+  reservationType: '',
 };
 
 const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    // Action pour définir les données de l'utilisateur
     setUserData: (
       state,
-      action: PayloadAction<{ token: string; role: string; firstName: string }>,
+      action: PayloadAction<{
+        token: string;
+        role: string;
+        firstName: string;
+        reservationType: string;
+      }>,
     ) => {
       state.token = action.payload.token;
       state.role = action.payload.role;
       state.firstName = action.payload.firstName;
+      state.reservationType = action.payload.reservationType;
     },
-    // Action pour effacer les données de l'utilisateur lors de la déconnexion
+    // Ajouter une action spécifique pour mettre à jour reservationType
+    setReservationType: (state, action: PayloadAction<string>) => {
+      state.reservationType = action.payload;
+    },
     logout: (state) => {
       state.token = '';
       state.role = '';
       state.firstName = '';
+      state.reservationType = '';
     },
   },
 });
 
-// Exporter les actions
-export const { setUserData, logout } = userSlice.actions;
+// Exporter la nouvelle action
+export const { setUserData, logout, setReservationType } = userSlice.actions;
 
 // Exporter le reducer
 export default userSlice.reducer;

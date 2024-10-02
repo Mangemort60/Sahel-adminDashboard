@@ -8,7 +8,7 @@ import {
   TextInput,
 } from 'react-admin';
 
-import FileUploader from './Utils/FileUploader'; // Vérifiez que le chemin est correct
+import FileUploader from './utils/FileUploader'; // Vérifiez que le chemin est correct
 
 export const UserCreate = (props) => {
   const [cvUrl, setCvUrl] = useState('');

@@ -1,6 +1,5 @@
 import '../firebaseConfig'; // Assurez-vous que ceci initialise Firebase
 
-import Cookies from 'js-cookie';
 import * as React from 'react';
 import { Admin, Resource } from 'react-admin';
 import { FirebaseDataProvider } from 'react-admin-firebase';
