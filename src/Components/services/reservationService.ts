@@ -1,4 +1,4 @@
-import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection } from 'firebase/firestore';
 
 import { db } from '../../../firebaseConfig';
 
@@ -9,34 +9,30 @@ export const saveDevisInFirestore = async (
   devisAmount: number,
 ) => {
   try {
-    // Log des paramètres pour vérifier s'ils sont bien définis
-    console.log('reservationId:', reservationId);
-    console.log('devisUrl:', devisUrl);
-    console.log('devisAmount:', devisAmount);
-
     if (!reservationId || !devisUrl || !devisAmount) {
       throw new Error('Les paramètres sont manquants ou invalides.');
     }
 
-    // Référence au document Firestore
-    const reservationRef = doc(db, 'reservations', reservationId);
-    console.log('Référence Firestore créée:', reservationRef);
+    // Référence à la sous-collection 'devis' de la réservation
+    const devisCollectionRef = collection(db, 'reservations', reservationId, 'devis');
 
     // Objet devis à ajouter
     const devis = {
-      url: devisUrl,
-      amount: devisAmount,
-      status: "en attente d'acceptation",
-      createdAt: new Date().toISOString(),
+      url: devisUrl, // URL du devis PDF
+      amount: devisAmount, // Montant du devis
+      status: "en attente d'acceptation", // Statut initial du devis
+      createdAt: new Date().toISOString(), // Date de création du devis
+      paymentStatus: 'en attente de paiement', // Statut de paiement initial
+      validUntil: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString(), // Date de validité (ici, 15 jours à partir de la création)
+      expired: false, // Indique si le devis est expiré ou non
+      notes: 'Ce devis expire après 15 jours.', // Notes pour information complémentaire
+      createdBy: 'admin@example.com', // Identité de la personne qui a créé le devis (peut être dynamique)
     };
 
-    // Mise à jour de Firestore avec l'objet devis
-    await updateDoc(reservationRef, {
-      devis: arrayUnion(devis), // Ajoute l'objet devis dans le tableau devis
-      bookingStatus: 'devis envoyé', // Change le statut de la réservation
-    });
+    // Ajout du devis dans la sous-collection 'devis'
+    const docRef = await addDoc(devisCollectionRef, devis);
 
-    console.log('Devis sauvegardé avec succès dans Firestore.');
+    console.log("Devis sauvegardé avec succès dans Firestore avec l'ID:", docRef.id);
   } catch (error) {
     console.error('Erreur dans saveDevisInFirestore:', error);
     throw error;

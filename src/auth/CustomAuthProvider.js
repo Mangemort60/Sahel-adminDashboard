@@ -31,12 +31,13 @@ const CustomAuthProvider = {
           }
 
           const token = await user.getIdToken();
+          const email = user.email;
 
           // Stockez le rôle dans les cookies pour une utilisation ultérieure
           Cookies.set('role', role, { expires: 7 });
 
           // Dispatch Redux action to set user data in the global state
-          store.dispatch(setUserData({ token, role, firstName }));
+          store.dispatch(setUserData({ token, role, firstName, email }));
 
           return Promise.resolve();
         } else {

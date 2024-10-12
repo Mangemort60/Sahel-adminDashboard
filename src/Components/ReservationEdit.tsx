@@ -25,7 +25,9 @@ export const ReservationEdit: React.FC = (props) => {
       <Box>
         <SimpleForm>
           {/* Conditionner l'affichage des formulaires selon le type de réservation */}
-          {reservation?.reservationType === 'petits-travaux' && <SmallRepairsForm />}
+          {reservation?.reservationType === 'petits-travaux' && (
+            <SmallRepairsForm reservation={reservation} />
+          )}
           {reservation?.reservationType === 'ménage' && <MenageForm />}
           {reservation?.reservationType === 'cuisine' && <CookingForm />}{' '}
           {/* Nouveau formulaire pour cuisine */}

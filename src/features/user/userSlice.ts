@@ -6,6 +6,7 @@ interface UserState {
   role: string;
   firstName: string;
   reservationType: string;
+  email: string;
 }
 
 // Définir l'état initial de l'utilisateur
@@ -14,6 +15,7 @@ const initialState: UserState = {
   role: '',
   firstName: '',
   reservationType: '',
+  email: '',
 };
 
 const userSlice = createSlice({
@@ -27,12 +29,14 @@ const userSlice = createSlice({
         role: string;
         firstName: string;
         reservationType: string;
+        email: string;
       }>,
     ) => {
       state.token = action.payload.token;
       state.role = action.payload.role;
       state.firstName = action.payload.firstName;
       state.reservationType = action.payload.reservationType;
+      state.email = action.payload.email;
     },
     // Ajouter une action spécifique pour mettre à jour reservationType
     setReservationType: (state, action: PayloadAction<string>) => {
@@ -43,6 +47,7 @@ const userSlice = createSlice({
       state.role = '';
       state.firstName = '';
       state.reservationType = '';
+      state.email = '';
     },
   },
 });

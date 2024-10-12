@@ -1,10 +1,13 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Box, Button, Divider, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import axios from 'axios';
 import { useState } from 'react';
 import { BooleanInput, SelectInput, TextInput } from 'react-admin';
 import { useParams } from 'react-router-dom';
 
+import { useAppSelector } from '../app/hooks';
+import getApiUrl from '../utils/getApiUrl';
 import { uploadDevis } from './services/firebaseStorageService';
 import { saveDevisInFirestore } from './services/reservationService';
 
@@ -47,20 +50,20 @@ const bookingStatusChoices = [
   { id: 'annulé', name: 'annulé' },
   { id: 'terminé', name: 'terminé' },
 ];
-const SmallRepairsForm = () => {
+const SmallRepairsForm = (reservation: Reservation) => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState<number | null>(null); // État pour stocker le montant du devis
-
+  const apiUrl = getApiUrl();
   const { id } = useParams<{ id: string }>();
+
+  const email = useAppSelector((state) => state.user.email);
 
   // Vérifie si l'id est undefined
   if (!id) {
     return <p>Erreur : ID de la réservation est manquant.</p>;
   }
-
-  console.log('RESERVATION ID ', id);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -77,14 +80,14 @@ const SmallRepairsForm = () => {
     try {
       setIsUploading(true);
 
-      // Upload du fichier dans Firebase Storage
+      // 1. Upload du fichier dans Firebase Storage
       const devisUrl = await uploadDevis(selectedFile, id);
       console.log('URL du fichier uploadé:', devisUrl);
 
-      // Sauvegarde dans Firestore avec le montant du devis
-      await saveDevisInFirestore(id, devisUrl, quoteAmount);
+      // 2. Sauvegarde dans Firestore avec le montant du devis
+      await saveDevisInFirestore(id, devisUrl, quoteAmount, email);
 
-      alert('Le devis a été uploadé avec succès.');
+      alert('Le devis a été uploadé et un PaymentIntent a été créé avec succès.');
     } catch (error) {
       console.error("Erreur lors de l'upload du devis :", error);
       alert("Erreur lors de l'upload du devis.");
@@ -112,6 +115,7 @@ const SmallRepairsForm = () => {
             marginBottom: '16px',
           }}
         >
+          <TextInput source="id" disabled />
           <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginBottom: '16px' }}>
             <TextInput source="name" label="Nom du client" fullWidth />
             <TextInput source="firstName" label="Prénom du client" fullWidth />
@@ -150,6 +154,7 @@ const SmallRepairsForm = () => {
           label="Status"
           fullWidth
         />
+        <TextInput source="paymentStatus" label="Status de paiement" fullWidth />
         <TextInput source="workCategory" label="Catégorie de Travail" fullWidth />
 
         <TextInput
