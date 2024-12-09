@@ -1,17 +1,20 @@
 import '../firebaseConfig'; // Assurez-vous que ceci initialise Firebase
 
 import * as React from 'react';
-import { Admin, Resource } from 'react-admin';
+import { Admin, CustomRoutes, Resource } from 'react-admin';
 import { FirebaseDataProvider } from 'react-admin-firebase';
+import { Route } from 'react-router-dom';
 
 import firebaseConfig from '../firebaseConfig';
 import { useAppSelector } from './app/hooks';
 import CustomAuthProvider from './auth/CustomAuthProvider';
+import CreateAdminUser from './Components/CreateAdminUser';
 import { ReservationEdit } from './Components/ReservationEdit';
 import { ReservationList } from './Components/ReservationList';
 import { UserCreate } from './Components/UserCreate';
 import { UsersEdit } from './Components/UsersEdit';
 import { UsersList } from './Components/UsersList';
+import CreateAdminUserPage from './pages/CreateAdminUserPage';
 import CustomLoginPage from './pages/CustomLoginPage';
 
 const options = {
@@ -37,6 +40,10 @@ const AdminDashboard = () => {
       {role === 'superAdmin' && (
         <Resource name="users" list={UsersList} edit={UsersEdit} create={UserCreate} />
       )}
+
+      <CustomRoutes>
+        <Route path="/create-admin-user" element={<CreateAdminUserPage />} />
+      </CustomRoutes>
     </Admin>
   );
 };

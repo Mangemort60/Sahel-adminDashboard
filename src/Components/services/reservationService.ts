@@ -1,4 +1,4 @@
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 
 import { db } from '../../../firebaseConfig';
 
@@ -27,6 +27,7 @@ export const saveDevisInFirestore = async (
       expired: false, // Indique si le devis est expiré ou non
       notes: 'Ce devis expire après 15 jours.', // Notes pour information complémentaire
       createdBy: 'admin@example.com', // Identité de la personne qui a créé le devis (peut être dynamique)
+      viewedByClient: false,
     };
 
     // Ajout du devis dans la sous-collection 'devis'
@@ -35,6 +36,31 @@ export const saveDevisInFirestore = async (
     console.log("Devis sauvegardé avec succès dans Firestore avec l'ID:", docRef.id);
   } catch (error) {
     console.error('Erreur dans saveDevisInFirestore:', error);
+    throw error;
+  }
+};
+
+export const saveReportInFirestore = async (reservationId: string, reportUrl: string) => {
+  try {
+    if (!reservationId || !reportUrl) {
+      throw new Error('Les paramètres sont manquants ou invalides.');
+    }
+
+    // Référence au document de la réservation
+    const reservationDocRef = doc(db, 'reservations', reservationId);
+
+    // Mise à jour de la réservation avec l'URL du rapport
+    await updateDoc(reservationDocRef, {
+      finalReportUrl: reportUrl, // Ajouter ou mettre à jour le champ finalReportUrl
+      reportUploadedAt: new Date().toISOString(), // Optionnel : Ajoute un timestamp pour l'upload
+    });
+
+    console.log(
+      'Rapport final sauvegardé avec succès dans Firestore pour la réservation:',
+      reservationId,
+    );
+  } catch (error) {
+    console.error('Erreur dans saveReportInFirestore:', error);
     throw error;
   }
 };

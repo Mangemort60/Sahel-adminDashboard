@@ -10,6 +10,8 @@ import {
   TopToolbar,
 } from 'react-admin';
 
+import CreateAdminButton from './common/CreateAdminButton';
+
 const UserListActions = (props) => (
   <TopToolbar>
     <CreateButton {...props} label="Créer un agent" />
@@ -56,6 +58,7 @@ export const UsersList = (props: ListProps) => (
     title="Liste des utilisateurs"
     actions={<UserListActions />}
   >
+    <CreateAdminButton />
     <Datagrid rowClick="edit">
       <TextField source="firstName" label="Prénom" />
       <TextField source="name" label="Nom" />

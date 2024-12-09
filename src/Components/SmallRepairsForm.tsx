@@ -1,15 +1,22 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Box, Button, Divider, TextField, Typography } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import axios from 'axios';
 import { useState } from 'react';
-import { BooleanInput, SelectInput, TextInput } from 'react-admin';
+import {
+  BooleanInput,
+  DateField,
+  DateInput,
+  DateTimeInput,
+  SelectInput,
+  TextInput,
+  useDataProvider,
+} from 'react-admin';
 import { useParams } from 'react-router-dom';
 
-import { useAppSelector } from '../app/hooks';
-import getApiUrl from '../utils/getApiUrl';
-import { uploadDevis } from './services/firebaseStorageService';
-import { saveDevisInFirestore } from './services/reservationService';
+import { uploadDevis, uploadReport } from './services/firebaseStorageService';
+import {
+  saveDevisInFirestore,
+  saveReportInFirestore,
+} from './services/reservationService';
 
 export interface Reservation {
   id: string;
@@ -50,51 +57,93 @@ const bookingStatusChoices = [
   { id: 'annulé', name: 'annulé' },
   { id: 'terminé', name: 'terminé' },
 ];
-const SmallRepairsForm = (reservation: Reservation) => {
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [quoteAmount, setQuoteAmount] = useState<number | null>(null); // État pour stocker le montant du devis
-  const apiUrl = getApiUrl();
+
+const SmallRepairsForm = () => {
+  const [selectedDevisFile, setSelectedDevisFile] = useState<File | null>(null);
+  const [isDevisUploading, setIsDevisUploading] = useState(false);
+
+  const [selectedReportFile, setSelectedReportFile] = useState<File | null>(null);
+  const [isReportUploading, setIsReportUploading] = useState(false);
+
+  const [quoteAmount, setQuoteAmount] = useState<number | null>(null);
+  const [status, setStatus] = useState<string | null>(null); // Nouvel état pour le statut
   const { id } = useParams<{ id: string }>();
 
-  const email = useAppSelector((state) => state.user.email);
-
-  // Vérifie si l'id est undefined
   if (!id) {
     return <p>Erreur : ID de la réservation est manquant.</p>;
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDevisFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      setSelectedFile(event.target.files[0]);
+      setSelectedDevisFile(event.target.files[0]);
+    }
+  };
+
+  const handleStatusChange = (newValue: string | null) => {
+    setStatus(newValue); // Met à jour le statut
+  };
+
+  const handleReportFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setSelectedReportFile(event.target.files[0]);
     }
   };
 
   const handleUploadDevis = async () => {
-    if (!selectedFile || quoteAmount === null) {
+    if (!selectedDevisFile || quoteAmount === null) {
       alert('Veuillez sélectionner un fichier et entrer un montant de devis.');
       return;
     }
 
     try {
-      setIsUploading(true);
-
-      // 1. Upload du fichier dans Firebase Storage
-      const devisUrl = await uploadDevis(selectedFile, id);
-      console.log('URL du fichier uploadé:', devisUrl);
-
-      // 2. Sauvegarde dans Firestore avec le montant du devis
-      await saveDevisInFirestore(id, devisUrl, quoteAmount, email);
-
-      alert('Le devis a été uploadé et un PaymentIntent a été créé avec succès.');
+      setIsDevisUploading(true);
+      const devisUrl = await uploadDevis(selectedDevisFile, id);
+      await saveDevisInFirestore(id, devisUrl, quoteAmount);
+      alert('Le devis a été uploadé avec succès.');
     } catch (error) {
-      console.error("Erreur lors de l'upload du devis :", error);
+      console.error("Erreur lors de l'upload du devis:", error);
       alert("Erreur lors de l'upload du devis.");
     } finally {
-      setIsUploading(false);
+      setIsDevisUploading(false);
+      setSelectedDevisFile(null);
     }
   };
+
+  // Ajoutez ceci dans votre composant
+  const dataProvider = useDataProvider();
+
+  const handleUploadReport = async () => {
+    if (status !== 'terminé') {
+      alert('Vous devez définir le statut sur "terminé" avant de confirmer l\'envoi.');
+      return;
+    }
+    if (!selectedReportFile) {
+      alert('Veuillez sélectionner un fichier.');
+      return;
+    }
+
+    try {
+      setIsReportUploading(true);
+      const reportUrl = await uploadReport(selectedReportFile, id);
+      await saveReportInFirestore(id, reportUrl);
+
+      await dataProvider.update('reservations', {
+        id,
+        data: { bookingStatus: 'terminé' },
+        previousData: undefined,
+      });
+      alert('Rapport final uploadé avec succès.');
+
+      setStatus('terminé');
+    } catch (error) {
+      console.error("Erreur lors de l'upload du rapport final:", error);
+      alert("Erreur lors de l'upload du rapport final.");
+    } finally {
+      setIsReportUploading(false);
+      setSelectedReportFile(null);
+    }
+  };
+
   return (
     <Box sx={{ width: '70%' }}>
       <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: '16px' }}>
@@ -104,7 +153,6 @@ const SmallRepairsForm = (reservation: Reservation) => {
       {/* Section 1: Adresse */}
       <Box sx={{ marginBottom: '20px' }}>
         <Divider sx={{ marginBottom: '16px' }} />
-
         <Box
           sx={{
             display: 'flex',
@@ -141,7 +189,6 @@ const SmallRepairsForm = (reservation: Reservation) => {
           Détails des travaux
         </Typography>
         <Divider sx={{ marginBottom: '16px' }} />
-
         <SelectInput
           source="urgency"
           label="Niveau d'urgence"
@@ -153,10 +200,11 @@ const SmallRepairsForm = (reservation: Reservation) => {
           source="bookingStatus"
           label="Status"
           fullWidth
+          onChange={(e) => handleStatusChange(e.target.value)} // Capture les changements
         />
+
         <TextInput source="paymentStatus" label="Status de paiement" fullWidth />
         <TextInput source="workCategory" label="Catégorie de Travail" fullWidth />
-
         <TextInput
           source="workDescription"
           label="Description des travaux"
@@ -164,50 +212,93 @@ const SmallRepairsForm = (reservation: Reservation) => {
           minRows={4}
           fullWidth
         />
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography variant="h5" gutterBottom>
+            Période des travaux
+          </Typography>
+          <Divider sx={{ marginBottom: '16px' }} />
+          <DateInput source="serviceDate.startDate" label="Entre le" />
+          <DateInput source="serviceDate.startDate" label="Et le" />
+        </Box>
       </Box>
-      {/* Section pour saisir le montant du devis */}
-      <Box sx={{ marginBottom: '20px' }}>
-        <TextField
-          label="Montant du devis (€)"
-          type="number"
-          value={quoteAmount ?? ''}
-          onChange={(e) => setQuoteAmount(parseFloat(e.target.value))}
-          fullWidth
-        />
-      </Box>
+
+      {/* Section Options Supplémentaires */}
       <Box sx={{ marginBottom: '20px' }}>
         <Typography variant="h5" gutterBottom>
           Options Supplémentaires
         </Typography>
         <Divider sx={{ marginBottom: '16px' }} />
-
         <Box
           sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '16px' }}
         >
           <BooleanInput source="keyReceived" label="Clés Reçues" />
           <BooleanInput source="chatStatus" label="Chat Actif" />
-          <Button
-            component="label"
-            variant="contained"
-            startIcon={<CloudUploadIcon />}
-            disabled={isUploading}
-          >
-            {isUploading ? 'Upload en cours...' : 'Uploader un devis'}
-            <input type="file" hidden onChange={handleFileChange} />
-          </Button>
-
-          {selectedFile && (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleUploadDevis}
-              disabled={isUploading}
-              sx={{ marginTop: '10px' }}
-            >
-              {isUploading ? 'Envoi...' : "Confirmer l'upload"}
-            </Button>
-          )}
         </Box>
+      </Box>
+
+      {/* Section Devis */}
+      <Box sx={{ marginBottom: '20px' }}>
+        <Typography variant="h5" gutterBottom>
+          Devis
+        </Typography>
+        <Divider sx={{ marginBottom: '16px' }} />
+        {/* Section pour saisir le montant du devis */}
+        <Box sx={{ marginBottom: '20px' }}>
+          <TextField
+            label="Montant du devis (€)"
+            type="number"
+            value={quoteAmount ?? ''}
+            onChange={(e) => setQuoteAmount(parseFloat(e.target.value))}
+            fullWidth
+          />
+        </Box>
+        <Button
+          component="label"
+          variant="contained"
+          startIcon={<CloudUploadIcon />}
+          disabled={isDevisUploading}
+          sx={{ marginRight: '20px' }}
+        >
+          {isDevisUploading ? 'Upload en cours...' : 'Uploader un devis'}
+          <input type="file" hidden onChange={handleDevisFileChange} />
+        </Button>
+        {selectedDevisFile && (
+          <Button
+            variant="contained"
+            onClick={handleUploadDevis}
+            disabled={isDevisUploading}
+          >
+            {isDevisUploading ? 'Envoi...' : "Confirmer l'upload"}
+          </Button>
+        )}
+      </Box>
+
+      {/* Section Rapport Final */}
+      <Box sx={{ marginBottom: '20px' }}>
+        <Typography variant="h5" gutterBottom>
+          Rapport Final
+        </Typography>
+        <Divider sx={{ marginBottom: '16px' }} />
+        <Button
+          component="label"
+          variant="contained"
+          startIcon={<CloudUploadIcon />}
+          disabled={isReportUploading}
+          sx={{ marginRight: '20px' }}
+        >
+          {isReportUploading ? 'Upload en cours...' : 'Uploader un rapport'}
+          <input type="file" hidden onChange={handleReportFileChange} />
+        </Button>
+        {selectedReportFile && (
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleUploadReport}
+            disabled={isReportUploading}
+          >
+            {isReportUploading ? 'Envoi...' : "Confirmer l'upload"}
+          </Button>
+        )}
       </Box>
     </Box>
   );
