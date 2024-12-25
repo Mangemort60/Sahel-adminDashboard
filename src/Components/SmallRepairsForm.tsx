@@ -25,6 +25,7 @@ export interface Reservation {
   city: string;
   address: string;
   serviceDate: string;
+  serviceDates: [string];
   quote: number;
   email: string;
   name: string;
@@ -217,8 +218,8 @@ const SmallRepairsForm = () => {
             Période des travaux
           </Typography>
           <Divider sx={{ marginBottom: '16px' }} />
-          <DateInput source="serviceDate.startDate" label="Entre le" />
-          <DateInput source="serviceDate.startDate" label="Et le" />
+          <DateInput source="serviceDates.startDate" label="Entre le" />
+          <DateInput source="serviceDates.endDate" label="Et le" />
         </Box>
       </Box>
 

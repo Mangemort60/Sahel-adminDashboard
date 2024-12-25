@@ -1,5 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IconButton, Paper, TextField, Typography } from '@mui/material';
+import {
+  CircularProgress,
+  IconButton,
+  Paper,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { Box } from '@mui/system';
 import axios from 'axios';
 import { getDownloadURL, ref } from 'firebase/storage';
@@ -24,6 +30,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
   //   const sender = useAppSelector((state) => state.user.name);
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isSending, setIsSending] = useState(false); // État pour le spinner
   const userRole = useAppSelector((state) => state.user.role);
   const apiUrl = getApiUrl();
   console.log('RESERVATION ID', reservationId);
@@ -98,6 +105,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
   };
 
   const onSubmit = async (data: MessageData) => {
+    setIsSending(true); // Active le spinner
     const formData = new FormData();
     formData.append('sender', sender);
     formData.append('clientEmail', clientEmail);
@@ -133,10 +141,13 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
 
       setMessages((prevMessages) => [...prevMessages, newMessage]);
       reset();
+      setSelectedFiles([]);
       alert('Message sent successfully');
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Failed to send message');
+    } finally {
+      setIsSending(false); // Désactive le spinner
     }
   };
 
@@ -207,7 +218,11 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
             <input type="file" multiple hidden onChange={handleFileChange} />
           </IconButton>
           <IconButton type="submit" color="primary">
-            <IoSend fontSize={28} />
+            {isSending ? (
+              <CircularProgress size={24} color="inherit" /> // Spinner en cours d'envoi
+            ) : (
+              <IoSend fontSize={28} />
+            )}
           </IconButton>
         </Box>
         {selectedFiles.length > 0 && (

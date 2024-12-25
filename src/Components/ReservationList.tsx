@@ -199,7 +199,22 @@ export const ReservationList = (props: ListProps) => {
         <TextField source="bookingFormData.city" label="Ville" /> */}
         <EmailField source="email" label="Email" />
         <TextField source="bookingFormData.phone" label="Téléphone" />
-        <TextField source="serviceDate" label="Date du Service" />
+        <FunctionField
+          label="Date du Service"
+          render={(record: {
+            reservationType: string;
+            serviceDates?: { startDate?: string; endDate?: string };
+            serviceDate?: string;
+          }) =>
+            record.reservationType === 'petits-travaux'
+              ? record.serviceDates?.startDate
+                ? `${record.serviceDates.startDate} - ${
+                    record.serviceDates.endDate || 'Non défini'
+                  }`
+                : 'Non défini'
+              : record.serviceDate || 'Non défini'
+          }
+        />
         {(reservationType === 'ménage' || reservationType === 'all') && (
           <TextField source="formData.sizeRange" label="Surface" />
         )}
