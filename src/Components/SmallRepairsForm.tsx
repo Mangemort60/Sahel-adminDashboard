@@ -3,10 +3,9 @@ import { Box, Button, Divider, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
 import {
   BooleanInput,
-  DateField,
   DateInput,
-  DateTimeInput,
   SelectInput,
+  TextField as RaTextField,
   TextInput,
   useDataProvider,
 } from 'react-admin';
@@ -146,7 +145,7 @@ const SmallRepairsForm = () => {
   };
 
   return (
-    <Box sx={{ width: '70%' }}>
+    <Box sx={{ width: '700px' }}>
       <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: '16px' }}>
         Petites Réparations
       </Typography>
@@ -154,6 +153,13 @@ const SmallRepairsForm = () => {
       {/* Section 1: Adresse */}
       <Box sx={{ marginBottom: '20px' }}>
         <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
+          Coordonnées
+        </Typography>
         <Box
           sx={{
             display: 'flex',
@@ -165,36 +171,48 @@ const SmallRepairsForm = () => {
           }}
         >
           <TextInput source="id" disabled />
-          <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginBottom: '16px' }}>
-            <TextInput source="name" label="Nom du client" fullWidth />
-            <TextInput source="firstName" label="Prénom du client" fullWidth />
+          <Box
+            sx={{
+              display: 'inline-flex',
+              width: '80%',
+              gap: '10px',
+              marginBottom: '16px',
+            }}
+          >
+            <TextInput source="name" label="Nom du client" fullWidth readOnly />
+            <TextInput source="firstName" label="Prénom du client" fullWidth readOnly />
           </Box>
           <Box sx={{ display: 'flex', width: '100%', gap: '10px' }}>
-            <TextInput source="email" label="Email du client" fullWidth />
+            <TextInput source="email" label="Email du client" fullWidth readOnly />
           </Box>
           <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginTop: '16px' }}>
-            <TextInput source="address" label="Adresse" fullWidth />
+            <TextInput source="address" label="Adresse" fullWidth readOnly />
           </Box>
           <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginTop: '16px' }}>
-            <TextInput source="city" label="Ville" fullWidth />
+            <TextInput source="city" label="Ville" fullWidth readOnly />
           </Box>
           <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginTop: '16px' }}>
-            <TextInput source="phone" label="Téléphone" fullWidth />
+            <TextInput source="phone" label="Téléphone" fullWidth readOnly />
           </Box>
         </Box>
       </Box>
 
       {/* Section 2: Urgence */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h5" gutterBottom>
+        <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
           Détails des travaux
         </Typography>
-        <Divider sx={{ marginBottom: '16px' }} />
         <SelectInput
           source="urgency"
           label="Niveau d'urgence"
           choices={urgencyChoices}
           fullWidth
+          readOnly
         />
         <SelectInput
           choices={bookingStatusChoices}
@@ -204,20 +222,30 @@ const SmallRepairsForm = () => {
           onChange={(e) => handleStatusChange(e.target.value)} // Capture les changements
         />
 
-        <TextInput source="paymentStatus" label="Status de paiement" fullWidth />
-        <TextInput source="workCategory" label="Catégorie de Travail" fullWidth />
+        <TextInput source="paymentStatus" label="Status de paiement" fullWidth readOnly />
+        <TextInput
+          source="workCategory"
+          label="Catégorie de Travail"
+          fullWidth
+          readOnly
+        />
         <TextInput
           source="workDescription"
           label="Description des travaux"
           multiline
           minRows={4}
           fullWidth
+          readOnly
         />
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h5" gutterBottom>
+          <Divider sx={{ marginBottom: '16px' }} />
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+            gutterBottom
+          >
             Période des travaux
           </Typography>
-          <Divider sx={{ marginBottom: '16px' }} />
           <DateInput source="serviceDates.startDate" label="Entre le" />
           <DateInput source="serviceDates.endDate" label="Et le" />
         </Box>
@@ -225,24 +253,32 @@ const SmallRepairsForm = () => {
 
       {/* Section Options Supplémentaires */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h5" gutterBottom>
+        <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
           Options Supplémentaires
         </Typography>
-        <Divider sx={{ marginBottom: '16px' }} />
         <Box
           sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '16px' }}
         >
           <BooleanInput source="keyReceived" label="Clés Reçues" />
-          <BooleanInput source="chatStatus" label="Chat Actif" />
+          {/* <BooleanInput source="chatStatus" label="Chat Actif" /> */}
         </Box>
       </Box>
 
       {/* Section Devis */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h5" gutterBottom>
+        <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
           Devis
         </Typography>
-        <Divider sx={{ marginBottom: '16px' }} />
         {/* Section pour saisir le montant du devis */}
         <Box sx={{ marginBottom: '20px' }}>
           <TextField
@@ -276,10 +312,14 @@ const SmallRepairsForm = () => {
 
       {/* Section Rapport Final */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h5" gutterBottom>
-          Rapport Final
-        </Typography>
         <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
+          Rapport final
+        </Typography>
         <Button
           component="label"
           variant="contained"

@@ -1,12 +1,19 @@
+/* eslint-disable react/no-unescaped-entities */
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  Box,
+  Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   Paper,
   TextField,
   Typography,
 } from '@mui/material';
-import { Box } from '@mui/system';
 import axios from 'axios';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { useEffect, useState } from 'react';
@@ -15,34 +22,38 @@ import { IoIosAttach } from 'react-icons/io';
 import { IoSend } from 'react-icons/io5';
 import { z } from 'zod';
 
-import { storage } from '../../firebaseConfig'; // Importez votre configuration Firebase
+import { storage } from '../../firebaseConfig';
 import { useAppSelector } from '../../src/app/hooks';
 import { messageSchema } from '../schemas/messageSchema';
 import getApiUrl from '../utils/getApiUrl';
+
 interface ChatBoxProps {
   reservationId: string;
   sender: string;
   clientEmail: string;
 }
 
+interface Message {
+  sender: string;
+  clientEmail: string;
+  text: string;
+  role: string;
+  attachments?: { url: string; type: string }[];
+  created: string;
+}
+
 const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail }) => {
-  //   const reservationId = useAppSelector((state) => state.ui.reservationId);
-  //   const sender = useAppSelector((state) => state.user.name);
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [isSending, setIsSending] = useState(false); // État pour le spinner
+  const [isSending, setIsSending] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false); // Pour confirmer avant envoi
+  const [openResultDialog, setOpenResultDialog] = useState(false); // Pour afficher le résultat
+  const [resultMessage, setResultMessage] = useState(''); // Message de résultat
+
+  const [pendingMessage, setPendingMessage] = useState<Message | null>(null);
+
   const userRole = useAppSelector((state) => state.user.role);
   const apiUrl = getApiUrl();
-  console.log('RESERVATION ID', reservationId);
-
-  interface Message {
-    sender: string;
-    clientEmail: string;
-    text: string;
-    role: string;
-    attachments?: { url: string; type: string }[];
-    created: string;
-  }
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -50,41 +61,27 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
         const response = await axios.get<Message[]>(
           `${apiUrl}/admin/reservations/${reservationId}/messages`,
         );
-
-        // Vérifiez la réponse reçue
-        console.log('API Response:', response); // Log complet de la réponse
-        console.log('Messages fetched from API:', response.data); // Log des données seulement
-
-        // Vérifiez si la réponse contient bien un tableau de messages
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          // Si des messages sont trouvés, mappez-les et mettez à jour l'état
-          const messagesWithUrls = await Promise.all(
-            response.data.map(async (message) => {
-              if (message.attachments && message.attachments.length > 0) {
-                const attachmentsWithUrls = await Promise.all(
-                  message.attachments.map(async (attachment) => {
-                    const fileRef = ref(storage, attachment.url);
-                    const url = await getDownloadURL(fileRef);
-                    return { url, type: attachment.type };
-                  }),
-                );
-                message.attachments = attachmentsWithUrls;
-              }
-              return message;
-            }),
-          );
-          setMessages(messagesWithUrls);
-        } else {
-          console.log('No messages found.');
-          setMessages([]); // Mettez à jour l'état avec un tableau vide si aucun message n'est trouvé
-        }
+        const messagesWithUrls = await Promise.all(
+          response.data.map(async (message) => {
+            if (message.attachments) {
+              message.attachments = await Promise.all(
+                message.attachments.map(async (attachment) => {
+                  const url = await getDownloadURL(ref(storage, attachment.url));
+                  return { url, type: attachment.type };
+                }),
+              );
+            }
+            return message;
+          }),
+        );
+        setMessages(messagesWithUrls);
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
     };
 
     fetchMessages();
-  }, [reservationId]);
+  }, [apiUrl, reservationId]);
 
   type MessageData = z.infer<typeof messageSchema>;
 
@@ -100,68 +97,65 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       setSelectedFiles(Array.from(event.target.files));
-      console.log(event.target.files);
     }
   };
 
-  const onSubmit = async (data: MessageData) => {
-    setIsSending(true); // Active le spinner
+  const handleSendMessage = async () => {
+    if (!pendingMessage) return;
+    setIsSending(true);
     const formData = new FormData();
-    formData.append('sender', sender);
-    formData.append('clientEmail', clientEmail);
-    formData.append('text', data.text);
-    formData.append('role', userRole);
-    formData.append('created', new Date().toISOString());
-    const apiUrl = getApiUrl();
-    selectedFiles.forEach((file) => {
-      formData.append('files', file);
-    });
+    formData.append('sender', pendingMessage.sender);
+    formData.append('clientEmail', pendingMessage.clientEmail);
+    formData.append('text', pendingMessage.text);
+    formData.append('role', pendingMessage.role);
+    formData.append('created', pendingMessage.created);
+    selectedFiles.forEach((file) => formData.append('files', file));
 
     try {
-      const response = await axios.post<Message>(
+      await axios.post<Message>(
         `${apiUrl}/reservations/${reservationId}/messages`,
         formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        },
+        { headers: { 'Content-Type': 'multipart/form-data' } },
       );
-      const newMessage: Message = {
-        sender,
-        text: data.text,
-        clientEmail: clientEmail,
-        role: userRole,
-        created: new Date().toISOString(),
-        attachments: selectedFiles.map((file) => ({
-          url: URL.createObjectURL(file),
-          type: file.type,
-        })),
-      };
-
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
-      reset();
-      setSelectedFiles([]);
-      alert('Message sent successfully');
+      setMessages((prevMessages) => [...prevMessages, pendingMessage]);
+      setResultMessage('Message envoyé avec succès.');
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message');
+      setResultMessage('Échec de l’envoi du message. Veuillez réessayer.');
     } finally {
-      setIsSending(false); // Désactive le spinner
+      setIsSending(false);
+      setOpenDialog(false); // Ferme la boîte de dialogue avant l'envoi
+      setOpenResultDialog(true); // Ouvre la boîte de dialogue pour le résultat
+      setPendingMessage(null); // Réinitialise le message en attente
+      reset();
+      setSelectedFiles([]);
     }
+  };
+
+  const onSubmit = (data: MessageData) => {
+    const newMessage: Message = {
+      sender,
+      text: data.text,
+      clientEmail,
+      role: userRole,
+      created: new Date().toISOString(),
+    };
+
+    setPendingMessage(newMessage);
+    setOpenDialog(true); // Ouvre la boîte de dialogue pour confirmer l'envoi
   };
 
   return (
     <Box
       mt={8}
       sx={{
-        width: '100%',
+        width: '720px',
         display: 'flex',
         flexDirection: 'column',
-        justifyItems: 'center',
       }}
     >
-      <Box component="ul" display="flex" flexDirection="column" alignItems="center" p={0}>
+      {/* Liste des messages */}
+      <Box component="ul" display="flex" flexDirection="column" p={0}>
         {messages.map((message, index) => (
           <Box
             component="li"
@@ -181,45 +175,46 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
               }}
             >
               <Typography variant="body2">{message.text}</Typography>
-              {message.attachments &&
-                message.attachments.map((attachment, i) =>
-                  attachment.type.startsWith('image/') ? (
-                    <img
-                      key={i}
-                      src={attachment.url}
-                      alt={`attachment-${i}`}
-                      style={{ maxWidth: '100%' }}
-                    />
-                  ) : (
-                    <a key={i} href={attachment.url} download>
-                      Télécharger le fichier
-                    </a>
-                  ),
-                )}
+              {message.attachments?.map((attachment, i) =>
+                attachment.type.startsWith('image/') ? (
+                  <img
+                    key={i}
+                    src={attachment.url}
+                    alt={`attachment-${i}`}
+                    style={{ maxWidth: '100%' }}
+                  />
+                ) : (
+                  <a key={i} href={attachment.url} download>
+                    Télécharger le fichier
+                  </a>
+                ),
+              )}
             </Paper>
           </Box>
         ))}
       </Box>
+
+      {/* Formulaire pour écrire un message */}
       <form onSubmit={handleSubmit(onSubmit)} style={{ width: '100%' }}>
         <Box display="flex" mt={2} maxWidth="sm">
           <TextField
             {...register('text')}
             variant="outlined"
             fullWidth
-            placeholder="Ecrivez votre message ici..."
+            placeholder="Écrivez votre message ici..."
             error={!!errors.text}
             helperText={errors.text?.message as string}
             multiline
             rows={3}
-            sx={{ flexGrow: 1 }}
+            disabled={isSending}
           />
-          <IconButton component="label">
-            <IoIosAttach fontSize={28} color="grey" className="hover:cursor-pointer" />
+          <IconButton component="label" disabled={isSending}>
+            <IoIosAttach fontSize={28} color="grey" />
             <input type="file" multiple hidden onChange={handleFileChange} />
           </IconButton>
-          <IconButton type="submit" color="primary">
+          <IconButton type="submit" color="primary" disabled={isSending}>
             {isSending ? (
-              <CircularProgress size={24} color="inherit" /> // Spinner en cours d'envoi
+              <CircularProgress size={24} color="inherit" />
             ) : (
               <IoSend fontSize={28} />
             )}
@@ -234,8 +229,37 @@ const ChatBox: React.FC<ChatBoxProps> = ({ reservationId, sender, clientEmail })
               ))}
             </ul>
           </Box>
-        )}{' '}
+        )}
       </form>
+
+      {/* Boîte de dialogue pour confirmer l'envoi */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Confirmer l'envoi</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Voulez-vous vraiment envoyer ce message ?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="primary">
+            Annuler
+          </Button>
+          <Button onClick={handleSendMessage} color="secondary" disabled={isSending}>
+            {isSending ? <CircularProgress size={24} color="inherit" /> : 'Envoyer'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Boîte de dialogue pour afficher le résultat */}
+      <Dialog open={openResultDialog} onClose={() => setOpenResultDialog(false)}>
+        <DialogTitle>Résultat</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{resultMessage}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenResultDialog(false)} color="primary">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

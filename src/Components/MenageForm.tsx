@@ -36,40 +36,51 @@ const bookingStatusChoices = [
 const MenageForm = () => {
   const { id: reservationId } = useParams<{ id: string }>();
   return (
-    <Box sx={{ maxWidth: '70%' }}>
+    <Box sx={{ width: '700px' }}>
       {' '}
       {/* Conteneur principal plus large */}
       {/* Section 1: Adresse et Agent */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: '16px' }}>
           Ménage
         </Typography>
         <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
+          Coordonnées
+        </Typography>
 
         <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginBottom: '16px' }}>
-          <TextInput source="name" label="Nom du client" fullWidth />
-          <TextInput source="firstName" label="Prénom du client" fullWidth />
+          <TextInput source="name" label="Nom du client" fullWidth readOnly />
+          <TextInput source="firstName" label="Prénom du client" fullWidth readOnly />
         </Box>
         <Box sx={{ display: 'flex', width: '100%', gap: '10px' }}>
-          <TextInput source="email" label="Email du client" fullWidth />
+          <TextInput source="email" label="Email du client" fullWidth readOnly />
         </Box>
         <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginTop: '16px' }}>
-          <TextInput source="address" label="Adresse" fullWidth />
-          <TextInput source="address2" label="Complément d'adresse" fullWidth />
+          <TextInput source="address" label="Adresse" fullWidth readOnly />
+          <TextInput source="address2" label="Complément d'adresse" fullWidth readOnly />
         </Box>
         <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginTop: '16px' }}>
-          <TextInput source="city" label="Ville" fullWidth />
+          <TextInput source="city" label="Ville" fullWidth readOnly />
         </Box>
         <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginTop: '16px' }}>
-          <TextInput source="phone" label="Téléphone" fullWidth />
+          <TextInput source="phone" label="Téléphone" fullWidth readOnly />
         </Box>
       </Box>
       {/* Section 3: Détails de la réservation */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h5" gutterBottom>
-          Détails de la Réservation
-        </Typography>
         <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
+          Détails de la réservation
+        </Typography>
 
         <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginBottom: '16px' }}>
           <FunctionField
@@ -96,9 +107,10 @@ const MenageForm = () => {
             label="Nombre d'étages"
             choices={numberOfFloorsChoices}
             fullWidth
+            readOnly
           />
-          <TextInput source="quote" label="Devis (€)" fullWidth />
-          <TextInput source="serviceDate" label="Date du Service" fullWidth />
+          <TextInput source="quote" label="Devis (€)" fullWidth readOnly />
+          <TextInput source="serviceDate" label="Date du Service" fullWidth readOnly />
         </Box>
 
         <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginBottom: '16px' }}>
@@ -107,33 +119,42 @@ const MenageForm = () => {
             label="Intervalle de taille (m²)"
             choices={sizeRangeChoices}
             fullWidth
+            readOnly
           />
         </Box>
         <Box sx={{ display: 'flex', width: '100%', gap: '10px', marginBottom: '16px' }}>
-          <AgentSelect reservationId={reservationId} fullWidth />
+          <AgentSelect reservationId={reservationId} />
         </Box>
       </Box>
       {/* Section 4: Options supplémentaires */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h5" gutterBottom>
-          Options Supplémentaires
-        </Typography>
         <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
+          Options supplémentaires
+        </Typography>
 
         <Box
           sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '16px' }}
         >
           <BooleanInput source="fruitBasketSelected" label="Panier de Fruits" />
           <BooleanInput source="keyReceived" label="Clés Reçues" />
-          <BooleanInput source="chatStatus" label="Chat Actif" />
+          {/* <BooleanInput source="chatStatus" label="Chat Actif" /> */}
         </Box>
       </Box>
       {/* Section 5: Instructions spéciales */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h5" gutterBottom>
-          Instructions Spéciales
-        </Typography>
         <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
+          Instructions spéciales
+        </Typography>
 
         <TextInput
           multiline
@@ -141,14 +162,19 @@ const MenageForm = () => {
           source="specialInstructions"
           label="Instructions spéciales"
           fullWidth
+          readOnly
         />
       </Box>
       {/* Section 6: Suivi et Historique */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Typography variant="h6" gutterBottom>
+        <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+          gutterBottom
+        >
           Suivi et Historique
         </Typography>
-        <Divider sx={{ marginBottom: '16px' }} />
 
         <Box sx={{ display: 'flex', width: '100%', gap: '10px' }}>
           <DateInput
