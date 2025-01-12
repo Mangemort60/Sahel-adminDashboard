@@ -1,5 +1,17 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { Box, Button, Divider, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useState } from 'react';
 import {
   BooleanInput,
@@ -8,6 +20,7 @@ import {
   TextField as RaTextField,
   TextInput,
   useDataProvider,
+  useRecordContext,
 } from 'react-admin';
 import { useParams } from 'react-router-dom';
 
@@ -53,34 +66,70 @@ const urgencyChoices = [
 const bookingStatusChoices = [
   { id: 'pré-demande', name: 'pré-demande' },
   { id: 'confirmé', name: 'confirmé' },
-  { id: 'à venir', name: 'à venir' },
-  { id: 'annulé', name: 'annulé' },
-  { id: 'terminé', name: 'terminé' },
+  { id: 'terminé', name: 'Terminé' },
+  { id: 'annulée', name: 'Annulé' },
+  { id: 'à venir', name: 'A venir' },
 ];
 
 const SmallRepairsForm = () => {
   const [selectedDevisFile, setSelectedDevisFile] = useState<File | null>(null);
   const [isDevisUploading, setIsDevisUploading] = useState(false);
-
+  const [openDialog, setOpenDialog] = useState(false);
   const [selectedReportFile, setSelectedReportFile] = useState<File | null>(null);
   const [isReportUploading, setIsReportUploading] = useState(false);
-
+  const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState<number | null>(null);
-  const [status, setStatus] = useState<string | null>(null); // Nouvel état pour le statut
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { id } = useParams<{ id: string }>();
+  const record = useRecordContext();
+  const [bookingStatus, setBookingStatus] = useState(
+    record?.bookingStatus || 'pré-demande',
+  );
 
   if (!id) {
     return <p>Erreur : ID de la réservation est manquant.</p>;
   }
 
+  // ✅ Ouvrir la boîte de dialogue
+  const handleOpenDialog = () => {
+    setOpenDialog(true);
+  };
+
+  // ✅ Fermer la boîte de dialogue
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  // ✅ Confirmer la pré-demande depuis la boîte de dialogue
+  const handleConfirmPreRequest = async () => {
+    setIsUpdatingStatus(true); // ✅ Verrouille l'UI immédiatement
+    setBookingStatus('confirmé'); // ✅ Optimistic Update : verrouille l'UI
+    try {
+      await dataProvider.update('reservations', {
+        id: record.id,
+        data: { bookingStatus: 'confirmé' },
+        previousData: undefined,
+      });
+      setOpenDialog(false);
+      setOpenSuccessDialog(true);
+    } catch (error) {
+      console.error('Erreur lors de la confirmation :', error);
+      alert('Erreur lors de la confirmation.');
+      setBookingStatus('pré-demande'); // ✅ Annulation en cas d'erreur
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  // ✅ Fermer la boîte de dialogue de succès
+  const handleCloseSuccessDialog = () => {
+    setOpenSuccessDialog(false);
+  };
+
   const handleDevisFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       setSelectedDevisFile(event.target.files[0]);
     }
-  };
-
-  const handleStatusChange = (newValue: string | null) => {
-    setStatus(newValue); // Met à jour le statut
   };
 
   const handleReportFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,10 +162,6 @@ const SmallRepairsForm = () => {
   const dataProvider = useDataProvider();
 
   const handleUploadReport = async () => {
-    if (status !== 'terminé') {
-      alert('Vous devez définir le statut sur "terminé" avant de confirmer l\'envoi.');
-      return;
-    }
     if (!selectedReportFile) {
       alert('Veuillez sélectionner un fichier.');
       return;
@@ -124,17 +169,19 @@ const SmallRepairsForm = () => {
 
     try {
       setIsReportUploading(true);
+
+      // Téléchargement du rapport sur le stockage Firebase
       const reportUrl = await uploadReport(selectedReportFile, id);
       await saveReportInFirestore(id, reportUrl);
 
+      // Mise à jour automatique du statut à "terminé" dans Firestore
       await dataProvider.update('reservations', {
         id,
         data: { bookingStatus: 'terminé' },
         previousData: undefined,
       });
-      alert('Rapport final uploadé avec succès.');
 
-      setStatus('terminé');
+      alert('Rapport final uploadé avec succès et réservation marquée comme terminée.');
     } catch (error) {
       console.error("Erreur lors de l'upload du rapport final:", error);
       alert("Erreur lors de l'upload du rapport final.");
@@ -143,6 +190,9 @@ const SmallRepairsForm = () => {
       setSelectedReportFile(null);
     }
   };
+
+  // ✅ Gère la désactivation si statut est confirmé
+  const isConfirmed = record?.bookingStatus === 'confirmé';
 
   return (
     <Box sx={{ width: '700px' }}>
@@ -214,14 +264,24 @@ const SmallRepairsForm = () => {
           fullWidth
           readOnly
         />
+        {/* ✅ Statut avec désactivation conditionnelle */}
+        {isConfirmed && (
+          <Typography color="green">
+            Le statut est confirmé et ne peut plus être modifié.
+          </Typography>
+        )}
         <SelectInput
-          choices={bookingStatusChoices}
           source="bookingStatus"
-          label="Status"
+          label="Statut de la réservation"
+          choices={bookingStatusChoices}
+          optionText="name"
+          optionValue="id"
           fullWidth
-          onChange={(e) => handleStatusChange(e.target.value)} // Capture les changements
+          value={bookingStatus}
+          onChange={() => handleOpenDialog()} // ✅ Confirmation avant la mise à jour
+          readOnly={bookingStatus !== 'pré-demande'} // ✅ Désactivation immédiate après confirmation
         />
-
+        {/* ✅ Message informatif si confirmé */}
         <TextInput source="paymentStatus" label="Status de paiement" fullWidth readOnly />
         <TextInput
           source="workCategory"
@@ -246,7 +306,7 @@ const SmallRepairsForm = () => {
           >
             Période des travaux
           </Typography>
-          <DateInput source="serviceDates.startDate" label="Entre le" />
+          <DateInput source="serviceStartDate" label="Entre le" />
           <DateInput source="serviceDates.endDate" label="Et le" />
         </Box>
       </Box>
@@ -341,6 +401,41 @@ const SmallRepairsForm = () => {
           </Button>
         )}
       </Box>
+
+      {/* ✅ Boîte de dialogue pour confirmation */}
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Confirmer la Pré-demande</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Êtes-vous sûr de vouloir confirmer cette pré-demande ? Cette action est
+            irréversible.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="secondary">
+            Annuler
+          </Button>
+          <Button onClick={handleConfirmPreRequest} color="primary">
+            Confirmer
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ✅ Boîte de dialogue de confirmation réussie */}
+      <Dialog open={openSuccessDialog} onClose={handleCloseSuccessDialog}>
+        <DialogTitle>Confirmation Réussie</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            La pré-demande a été confirmée avec succès. Le statut est désormais
+            verrouillé.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSuccessDialog} color="primary">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

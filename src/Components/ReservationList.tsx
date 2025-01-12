@@ -1,6 +1,7 @@
 import { Badge, Box } from '@mui/material';
 import { blue } from '@mui/material/colors';
 import axios from 'axios';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import {
   BooleanField,
@@ -170,25 +171,6 @@ export const ReservationList = (props: ListProps) => {
             textTransform: 'capitalize',
           }}
         />
-        <FunctionField
-          label="Messages"
-          render={(record: { id: string }) => (
-            <Badge
-              sx={{ color: blue }}
-              color={newMessages[record.id] > 0 ? 'secondary' : 'primary'}
-              badgeContent={newMessages[record.id] > 0 ? newMessages[record.id] : 0}
-            >
-              <Box
-                component="span"
-                sx={{
-                  color: newMessages[record.id] > 0 ? 'red' : 'green', // Changez la couleur ici
-                }}
-              >
-                {newMessages[record.id] > 0 ? 'Nouveau' : 'Aucun'}
-              </Box>
-            </Badge>
-          )}
-        />{' '}
         <TextField source="bookingStatus" label="Statut réservation" />
         <TextField source="serviceStatus" label="Statut prestation" />
         <TextField readOnly source="shortId" label="shortID" />
@@ -199,21 +181,12 @@ export const ReservationList = (props: ListProps) => {
         <TextField source="bookingFormData.city" label="Ville" /> */}
         <EmailField source="email" label="Email" />
         <TextField source="bookingFormData.phone" label="Téléphone" />
-        <FunctionField
+
+        <DateField
+          source="serviceStartDate"
           label="Date du Service"
-          render={(record: {
-            reservationType: string;
-            serviceDates?: { startDate?: string; endDate?: string };
-            serviceDate?: string;
-          }) =>
-            record.reservationType === 'petits-travaux'
-              ? record.serviceDates?.startDate
-                ? `${record.serviceDates.startDate} - ${
-                    record.serviceDates.endDate || 'Non défini'
-                  }`
-                : 'Non défini'
-              : record.serviceDate || 'Non défini'
-          }
+          sortBy="serviceStartDate"
+          showTime
         />
         {(reservationType === 'ménage' || reservationType === 'all') && (
           <TextField source="formData.sizeRange" label="Surface" />
