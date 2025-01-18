@@ -9,10 +9,19 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import dayjs from 'dayjs';
+import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import {
   BooleanInput,
   DateInput,
@@ -80,6 +89,10 @@ const SmallRepairsForm = () => {
   const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState<number | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [devisList, setDevisList] = useState<
+    { createdAt: string; amount: number; paymentStatus: string }[]
+  >([]);
+
   const { id } = useParams<{ id: string }>();
   const record = useRecordContext();
   const [bookingStatus, setBookingStatus] = useState(
@@ -107,7 +120,13 @@ const SmallRepairsForm = () => {
     try {
       await dataProvider.update('reservations', {
         id: record.id,
-        data: { bookingStatus: 'confirmé' },
+        data: {
+          bookingStatus: 'confirmé',
+          paymentStatus:
+            record.paymentStatus !== 'en attente de paiement des frais de service'
+              ? 'en attente de paiement des frais de service'
+              : record.paymentStatus,
+        },
         previousData: undefined,
       });
       setOpenDialog(false);
@@ -120,6 +139,35 @@ const SmallRepairsForm = () => {
       setIsUpdatingStatus(false);
     }
   };
+
+  useEffect(() => {
+    const fetchDevis = async () => {
+      if (!id) return;
+      const db = getFirestore();
+      const devisRef = collection(db, `reservations/${id}/devis`);
+      try {
+        const querySnapshot = await getDocs(devisRef);
+        const devisData = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          // Conversion directe de l'ISO string avec dayjs
+          const createdAt = data.createdAt
+            ? dayjs(data.createdAt).format('DD-MM-YYYY')
+            : 'Date inconnue';
+
+          return {
+            createdAt,
+            amount: data.amount ?? 0, // Valeur par défaut si absente
+            paymentStatus: data.paymentStatus ?? 'inconnu',
+          };
+        });
+        setDevisList(devisData);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des devis :', error);
+      }
+    };
+
+    fetchDevis();
+  }, [id]);
 
   // ✅ Fermer la boîte de dialogue de succès
   const handleCloseSuccessDialog = () => {
@@ -337,7 +385,7 @@ const SmallRepairsForm = () => {
           sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
           gutterBottom
         >
-          Devis
+          Transmettre un Devis
         </Typography>
         {/* Section pour saisir le montant du devis */}
         <Box sx={{ marginBottom: '20px' }}>
@@ -369,16 +417,54 @@ const SmallRepairsForm = () => {
           </Button>
         )}
       </Box>
+      <Box sx={{ width: '700px', marginY: 8 }}>
+        <Divider sx={{ marginBottom: '16px' }} />
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
+        >
+          Détails des Devis
+        </Typography>
 
+        {devisList.length > 0 ? (
+          <TableContainer component={Box} elevation={3}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <strong>Date de Création</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Montant (€)</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Statut</strong>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {devisList.map((devis, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{devis.createdAt}</TableCell>
+                    <TableCell>{devis.amount} €</TableCell>
+                    <TableCell>{devis.paymentStatus}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Typography>Aucun devis disponible.</Typography>
+        )}
+      </Box>
       {/* Section Rapport Final */}
       <Box sx={{ marginBottom: '20px' }}>
-        <Divider sx={{ marginBottom: '16px' }} />
         <Typography
           variant="h5"
           sx={{ fontWeight: 'bold', marginBottom: '16px', textAlign: 'left' }}
           gutterBottom
         >
-          Rapport final
+          Transmettre le rapport final
         </Typography>
         <Button
           component="label"
